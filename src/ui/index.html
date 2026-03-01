@@ -3,118 +3,160 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ryha Security Flow</title>
+<title>Ryha Security Flow - Enterprise Pentesting Platform</title>
 <script src="/socket.io/socket.io.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-:root{--bg:#0a0e17;--surface:#111827;--surface2:#1a2332;--border:#1e293b;--primary:#06b6d4;--green:#10b981;--red:#ef4444;--yellow:#f59e0b;--orange:#f97316;--purple:#a855f7;--text:#e2e8f0;--muted:#64748b;--font:'Segoe UI',system-ui,-apple-system,sans-serif;--mono:'Cascadia Code','Fira Code','JetBrains Mono',monospace}
+:root{--bg:#060a10;--surface:#0c1220;--surface2:#111a2e;--surface3:#162038;--border:#1a2744;--primary:#00d4ff;--primary-dim:#00d4ff30;--green:#00ff88;--green-dim:#00ff8825;--red:#ff3b5c;--red-dim:#ff3b5c25;--yellow:#ffb800;--yellow-dim:#ffb80025;--orange:#ff7b3a;--orange-dim:#ff7b3a25;--purple:#b84dff;--purple-dim:#b84dff25;--cyan:#00e5ff;--text:#e8edf5;--muted:#5a6a85;--font:'Segoe UI',system-ui,-apple-system,sans-serif;--mono:'Cascadia Code','Fira Code','JetBrains Mono','Consolas',monospace}
 body{background:var(--bg);color:var(--text);font-family:var(--font);height:100vh;display:flex;flex-direction:column;overflow:hidden}
-.header{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;gap:16px;flex-shrink:0}
-.logo{font-size:18px;font-weight:700;color:var(--primary);letter-spacing:1px}
-.logo span{color:var(--text);font-weight:400}
-.status-pills{display:flex;gap:8px;margin-left:auto}
-.pill{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
-.pill.green{background:#10b98120;color:var(--green)}
-.pill.red{background:#ef444420;color:var(--red)}
-.pill.yellow{background:#f59e0b20;color:var(--yellow)}
-.tabs{display:flex;gap:0;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
-.tab{padding:10px 24px;cursor:pointer;color:var(--muted);font-size:13px;font-weight:500;border-bottom:2px solid transparent;transition:.2s}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}::-webkit-scrollbar-thumb:hover{background:var(--muted)}
+.header{background:linear-gradient(135deg,#0a1628,#0f1d35);border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;gap:16px;height:48px;flex-shrink:0}
+.logo{font-size:15px;font-weight:800;color:var(--primary);letter-spacing:2px;text-transform:uppercase;white-space:nowrap}
+.logo span{color:var(--text);font-weight:400;letter-spacing:0;text-transform:none;font-size:13px;opacity:.7}
+.hdr-sep{width:1px;height:24px;background:var(--border);margin:0 4px}
+.model-sel{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)}
+.model-sel select{background:var(--surface2);border:1px solid var(--border);color:var(--primary);padding:3px 8px;border-radius:4px;font-size:11px;font-family:var(--mono);cursor:pointer}
+.hdr-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.pill{padding:2px 10px;border-radius:12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.pill.green{background:var(--green-dim);color:var(--green)}.pill.red{background:var(--red-dim);color:var(--red)}.pill.yellow{background:var(--yellow-dim);color:var(--yellow)}.pill.blue{background:var(--primary-dim);color:var(--primary)}
+.clock{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.tabs{display:flex;gap:0;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto}
+.tab{padding:8px 18px;cursor:pointer;color:var(--muted);font-size:12px;font-weight:500;border-bottom:2px solid transparent;transition:.15s;white-space:nowrap;user-select:none}
 .tab:hover{color:var(--text);background:var(--surface2)}
-.tab.active{color:var(--primary);border-bottom-color:var(--primary)}
-.main{flex:1;overflow:hidden;display:flex}
-.panel{display:none;flex:1;overflow:auto;padding:24px;gap:24px;flex-direction:column}
+.tab.active{color:var(--primary);border-bottom-color:var(--primary);background:var(--surface2)}
+.tab .badge{background:var(--red);color:#fff;font-size:9px;padding:1px 5px;border-radius:8px;margin-left:5px;font-weight:700}
+.main{flex:1;overflow:hidden;display:flex;flex-direction:column}
+.panel{display:none;flex:1;overflow:auto;padding:16px;gap:16px;flex-direction:column}
 .panel.active{display:flex}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px}
-.card h3{font-size:14px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:16px}
-.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
-.stat{text-align:center;padding:16px}
-.stat .num{font-size:36px;font-weight:700;line-height:1}
-.stat .label{font-size:11px;color:var(--muted);text-transform:uppercase;margin-top:4px}
-input,select,textarea{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:6px;font-size:14px;width:100%;font-family:var(--font)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:16px}
+.card h3{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px;font-weight:600}
+.stats-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:12px;text-align:center}
+.stat-card .num{font-size:28px;font-weight:800;line-height:1;font-family:var(--mono)}
+.stat-card .label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:4px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.grid-4{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px}
+input,select,textarea{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:4px;font-size:13px;width:100%;font-family:var(--font)}
 input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary)}
-label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
-.form-group{margin-bottom:12px}
-.btn{padding:10px 24px;border:none;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;transition:.2s;font-family:var(--font)}
-.btn-primary{background:var(--primary);color:#000}
-.btn-primary:hover{filter:brightness(1.1)}
-.btn-danger{background:var(--red);color:#fff}
-.btn-danger:hover{filter:brightness(1.1)}
-.btn-sm{padding:6px 14px;font-size:12px}
-.terminal{background:#000;border-radius:8px;padding:16px;font-family:var(--mono);font-size:12px;line-height:1.6;overflow-y:auto;flex:1;min-height:0}
-.terminal-entry{padding:1px 0;white-space:pre-wrap;word-break:break-all}
-.terminal-entry .ts{color:#555;margin-right:8px}
-.terminal-entry .agent-tag{color:var(--purple);margin-right:6px}
-.terminal-entry.command{color:var(--primary)}
-.terminal-entry.stdout{color:#94a3b8}
-.terminal-entry.stderr{color:var(--orange)}
-.terminal-entry.info{color:var(--primary)}
-.terminal-entry.success{color:var(--green)}
-.terminal-entry.error{color:var(--red)}
-.terminal-entry.agent{color:var(--purple)}
-.agent-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;display:flex;align-items:center;gap:12px}
+label{font-size:10px;color:var(--muted);display:block;margin-bottom:3px;text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.form-group{margin-bottom:10px}
+.btn{padding:8px 20px;border:none;border-radius:4px;font-size:12px;font-weight:700;cursor:pointer;transition:.15s;font-family:var(--font);text-transform:uppercase;letter-spacing:.5px}
+.btn-primary{background:var(--primary);color:#000}.btn-primary:hover{filter:brightness(1.2)}
+.btn-danger{background:var(--red);color:#fff}.btn-danger:hover{filter:brightness(1.2)}
+.btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border)}.btn-secondary:hover{border-color:var(--primary)}
+.btn-sm{padding:5px 12px;font-size:10px}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border);padding:5px 10px;font-size:10px;border-radius:3px;cursor:pointer}.btn-ghost:hover{color:var(--text);border-color:var(--muted)}
+.btn-ghost.active{color:var(--primary);border-color:var(--primary);background:var(--primary-dim)}
+.terminal{background:#000;border-radius:4px;padding:12px;font-family:var(--mono);font-size:11px;line-height:1.7;overflow-y:auto;flex:1;min-height:0}
+.terminal-entry{padding:0;white-space:pre-wrap;word-break:break-all}
+.terminal-entry .ts{color:#333;margin-right:6px;font-size:10px}
+.terminal-entry .agent-tag{color:var(--purple);margin-right:4px;font-weight:600}
+.terminal-entry.command{color:var(--primary)}.terminal-entry.stdout{color:#7a8899}.terminal-entry.stderr{color:var(--orange)}.terminal-entry.info{color:var(--cyan)}.terminal-entry.success{color:var(--green)}.terminal-entry.error{color:var(--red)}.terminal-entry.agent{color:var(--purple)}
+.agent-term-card{background:#000;border:1px solid var(--border);border-radius:6px;overflow:hidden;display:flex;flex-direction:column;height:280px}
+.agent-term-hdr{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface);border-bottom:1px solid var(--border);font-size:11px;font-weight:600}
+.agent-term-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.agent-term-dot.working{background:var(--yellow);animation:pulse 1.5s infinite}.agent-term-dot.completed{background:var(--green)}.agent-term-dot.failed{background:var(--red)}.agent-term-dot.idle{background:var(--muted)}
+.agent-term-body{flex:1;overflow-y:auto;padding:8px 12px;font-family:var(--mono);font-size:10px;line-height:1.6;color:#7a8899}
+.agent-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px;display:flex;align-items:center;gap:10px}
 .agent-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
-.agent-dot.idle{background:var(--muted)}
-.agent-dot.working,.agent-dot.running{background:var(--yellow);animation:pulse 1.5s infinite}
-.agent-dot.completed{background:var(--green)}
-.agent-dot.failed{background:var(--red)}
-.agent-info{flex:1;min-width:0}
-.agent-name{font-weight:600;font-size:14px}
-.agent-task{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.agent-status{font-size:11px;text-transform:uppercase;font-weight:600;letter-spacing:.5px}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-.vuln-row{display:flex;align-items:center;gap:12px;padding:12px;border-bottom:1px solid var(--border)}
-.vuln-row:last-child{border-bottom:none}
-.sev{padding:3px 10px;border-radius:4px;font-size:11px;font-weight:700;text-transform:uppercase;min-width:70px;text-align:center}
-.sev.critical{background:#ef444430;color:var(--red)}
-.sev.high{background:#f9731630;color:var(--orange)}
-.sev.medium{background:#f59e0b30;color:var(--yellow)}
-.sev.low{background:#06b6d430;color:var(--primary)}
-.sev.info{background:#64748b30;color:var(--muted)}
-.vuln-title{font-weight:500;flex:1}
-.vuln-agent{font-size:12px;color:var(--muted)}
-.phase-list{display:flex;flex-direction:column;gap:8px}
-.phase-item{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface2);border-radius:6px}
-.phase-icon{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
-.phase-icon.pending{background:var(--border);color:var(--muted)}
-.phase-icon.running{background:var(--yellow);color:#000;animation:pulse 1.5s infinite}
-.phase-icon.completed{background:var(--green);color:#000}
-.phase-icon.failed{background:var(--red);color:#fff}
-.phase-name{font-weight:500;flex:1}
-.phase-findings{font-size:12px;color:var(--muted)}
-.flex-col{display:flex;flex-direction:column}
-.gap-16{gap:16px}
+.agent-dot.idle{background:var(--muted)}.agent-dot.working,.agent-dot.running{background:var(--yellow);animation:pulse 1.5s infinite}.agent-dot.completed{background:var(--green)}.agent-dot.failed{background:var(--red)}
+.agent-info{flex:1;min-width:0}.agent-name{font-weight:600;font-size:13px}.agent-task{font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.agent-status{font-size:10px;text-transform:uppercase;font-weight:700;letter-spacing:.5px}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.vuln-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer;transition:.1s}.vuln-row:hover{background:var(--surface2)}.vuln-row:last-child{border-bottom:none}
+.sev{padding:2px 8px;border-radius:3px;font-size:10px;font-weight:800;text-transform:uppercase;min-width:60px;text-align:center;letter-spacing:.5px}
+.sev.critical{background:var(--red-dim);color:var(--red)}.sev.high{background:var(--orange-dim);color:var(--orange)}.sev.medium{background:var(--yellow-dim);color:var(--yellow)}.sev.low{background:var(--primary-dim);color:var(--primary)}.sev.info{background:#5a6a8525;color:var(--muted)}
+.vuln-title{font-weight:500;flex:1;font-size:13px}.vuln-agent{font-size:11px;color:var(--muted)}.vuln-cvss{font-family:var(--mono);font-size:11px;font-weight:700}
+.phase-list{display:flex;flex-direction:column;gap:6px}
+.phase-item{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface2);border-radius:4px}
+.phase-icon{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0}
+.phase-icon.pending{background:var(--border);color:var(--muted)}.phase-icon.running{background:var(--yellow);color:#000;animation:pulse 1.5s infinite}.phase-icon.completed{background:var(--green);color:#000}.phase-icon.failed{background:var(--red);color:#fff}
+.phase-name{font-weight:500;flex:1;font-size:13px}.phase-findings{font-size:11px;color:var(--muted)}
+.flex-col{display:flex;flex-direction:column}.flex-1{flex:1;min-height:0}.gap-12{gap:12px}.gap-16{gap:16px}
 .split-h{display:flex;gap:16px;flex:1;min-height:0}
-.split-left{flex:1;display:flex;flex-direction:column;gap:16px;overflow:auto}
-.split-right{width:380px;display:flex;flex-direction:column;gap:16px;overflow:auto}
-.flex-1{flex:1;min-height:0}
+.split-left{flex:1;display:flex;flex-direction:column;gap:12px;overflow:auto}
+.split-right{width:340px;display:flex;flex-direction:column;gap:12px;overflow:auto;flex-shrink:0}
 .scroll-y{overflow-y:auto}
-.empty-state{color:var(--muted);text-align:center;padding:40px;font-style:italic}
+.empty-state{color:var(--muted);text-align:center;padding:30px;font-size:12px;font-style:italic}
+.toolbar{display:flex;align-items:center;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.search-input{width:200px;padding:5px 10px;font-size:11px;border-radius:3px}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;display:none;align-items:center;justify-content:center}
+.modal-overlay.active{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:8px;width:600px;max-width:90vw;max-height:80vh;overflow-y:auto;padding:24px}
+.modal h2{font-size:16px;margin-bottom:16px;color:var(--primary)}
+.modal-close{float:right;background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;line-height:1}.modal-close:hover{color:var(--text)}
+.report-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px;display:flex;align-items:center;gap:12px}
+.report-icon{width:36px;height:36px;background:var(--primary-dim);border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--primary);font-size:16px;font-weight:700;flex-shrink:0}
+.report-info{flex:1}.report-name{font-weight:600;font-size:13px}.report-meta{font-size:11px;color:var(--muted)}
+.tool-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border)}
+.tool-row:last-child{border-bottom:none}
+.tool-name{font-weight:600;font-size:13px;min-width:120px}.tool-cat{font-size:10px;color:var(--muted);background:var(--surface2);padding:2px 8px;border-radius:3px}.tool-desc{flex:1;font-size:12px;color:var(--muted)}
+.tool-installed{color:var(--green);font-size:10px;font-weight:700}
+.chat-fab{position:fixed;bottom:50px;right:20px;width:48px;height:48px;border-radius:50%;background:var(--primary);color:#000;border:none;font-size:20px;font-weight:700;cursor:pointer;z-index:90;box-shadow:0 4px 16px rgba(0,212,255,.3);transition:.2s}.chat-fab:hover{transform:scale(1.1)}
+.chat-badge{position:absolute;top:-4px;right:-4px;background:var(--red);color:#fff;font-size:9px;width:18px;height:18px;border-radius:50%;display:none;align-items:center;justify-content:center;font-weight:700}
+.chat-panel{position:fixed;bottom:106px;right:20px;width:380px;max-height:60vh;background:var(--surface);border:1px solid var(--border);border-radius:8px;z-index:90;display:none;flex-direction:column;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.5)}
+.chat-panel.active{display:flex}
+.chat-hdr{padding:10px 14px;border-bottom:1px solid var(--border);font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:between}
+.chat-body{flex:1;overflow-y:auto;padding:12px;min-height:200px;max-height:50vh}
+.chat-msg{margin-bottom:10px;padding:8px 12px;border-radius:6px;font-size:12px;line-height:1.5}
+.chat-msg.summary{background:var(--surface2);border-left:3px solid var(--primary)}
+.chat-msg.alert{background:var(--red-dim);border-left:3px solid var(--red)}
+.chat-msg .time{font-size:10px;color:var(--muted);margin-bottom:3px}
+.statusbar{height:28px;background:var(--surface);border-top:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:20px;font-size:10px;color:var(--muted);flex-shrink:0}
+.statusbar .dot{width:6px;height:6px;border-radius:50%;margin-right:4px;display:inline-block}.statusbar .dot.on{background:var(--green)}.statusbar .dot.off{background:var(--red)}
+.settings-section{margin-bottom:20px}.settings-section h4{font-size:12px;color:var(--primary);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px}
+.radio-group{display:flex;flex-direction:column;gap:6px}.radio-group label{display:flex;align-items:center;gap:8px;font-size:13px;text-transform:none;letter-spacing:0;cursor:pointer;padding:6px 10px;border-radius:4px;transition:.1s}.radio-group label:hover{background:var(--surface2)}
+.radio-group input[type=radio]{accent-color:var(--primary)}
+.slider-row{display:flex;align-items:center;gap:12px}.slider-row input[type=range]{flex:1;accent-color:var(--primary)}.slider-row .val{font-family:var(--mono);font-size:12px;min-width:30px;text-align:right}
+@media(max-width:900px){.stats-grid{grid-template-columns:repeat(3,1fr)}.split-right{width:100%}.split-h{flex-direction:column}}
+@media(max-width:600px){.stats-grid{grid-template-columns:repeat(2,1fr)}.grid-4{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <div class="header">
   <div class="logo">RYHA <span>Security Flow</span></div>
-  <div class="status-pills">
+  <div class="hdr-sep"></div>
+  <div class="model-sel">
+    <span>AI Model:</span>
+    <select id="modelSelect" onchange="switchModel(this.value)">
+      <option value="claude-opus-4-6">Claude Opus 4.6</option>
+      <option value="claude-3-5-sonnet-20241022" selected>Sonnet 3.5</option>
+      <option value="gpt-4o">GPT-4o</option>
+      <option value="gpt-4">GPT-4</option>
+      <option value="o1-preview">o1-preview</option>
+    </select>
+  </div>
+  <div class="hdr-right">
     <div class="pill" id="authPill">...</div>
     <div class="pill" id="jobPill" style="display:none">...</div>
+    <div class="clock" id="hdrClock"></div>
   </div>
 </div>
-<div class="tabs">
+
+<div class="tabs" id="tabBar">
   <div class="tab active" data-tab="dashboard">Dashboard</div>
-  <div class="tab" data-tab="pentest">New Pentest</div>
+  <div class="tab" data-tab="agents-terminal">Agent Terminals</div>
   <div class="tab" data-tab="terminal">Live Terminal</div>
+  <div class="tab" data-tab="pentest">New Pentest</div>
   <div class="tab" data-tab="agents">Agents</div>
-  <div class="tab" data-tab="vulns">Vulnerabilities</div>
+  <div class="tab" data-tab="vulns">Vulnerabilities <span class="badge" id="vulnBadge" style="display:none">0</span></div>
+  <div class="tab" data-tab="reports">Reports</div>
+  <div class="tab" data-tab="tools">Tools</div>
+  <div class="tab" data-tab="settings">Settings</div>
 </div>
+
 <div class="main">
   <!-- DASHBOARD -->
   <div class="panel active" id="panel-dashboard">
-    <div class="grid-3">
-      <div class="card stat"><div class="num" id="statVulns" style="color:var(--red)">0</div><div class="label">Vulnerabilities</div></div>
-      <div class="card stat"><div class="num" id="statAgents" style="color:var(--primary)">0</div><div class="label">Active Agents</div></div>
-      <div class="card stat"><div class="num" id="statProgress" style="color:var(--green)">0%</div><div class="label">Progress</div></div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="num" id="statVulns" style="color:var(--red)">0</div><div class="label">Vulnerabilities</div></div>
+      <div class="stat-card"><div class="num" id="statAgents" style="color:var(--primary)">0</div><div class="label">Active Agents</div></div>
+      <div class="stat-card"><div class="num" id="statProgress" style="color:var(--green)">0%</div><div class="label">Progress</div></div>
+      <div class="stat-card"><div class="num" id="statToolsRun" style="color:var(--purple)">0</div><div class="label">Tools Run</div></div>
+      <div class="stat-card"><div class="num" id="statFindRate" style="color:var(--orange)">0</div><div class="label">Findings/Hr</div></div>
+      <div class="stat-card"><div class="num" id="statElapsed" style="color:var(--cyan)">0m</div><div class="label">Elapsed</div></div>
     </div>
     <div class="split-h">
       <div class="split-left">
@@ -126,71 +168,245 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;text-tra
       <div class="split-right">
         <div class="card">
           <h3>Current Job</h3>
-          <div id="currentJob"><div class="empty-state">No active pentest. Start one from the "New Pentest" tab.</div></div>
+          <div id="currentJob"><div class="empty-state">No active pentest</div></div>
         </div>
         <div class="card flex-1 flex-col">
           <h3>Phases</h3>
-          <div class="phase-list" id="phaseList"><div class="empty-state">No phases yet.</div></div>
+          <div class="phase-list" id="phaseList"><div class="empty-state">No phases</div></div>
         </div>
         <div class="card">
           <h3>Latest Vulnerabilities</h3>
-          <div id="latestVulns"><div class="empty-state">None found yet.</div></div>
+          <div id="latestVulns"><div class="empty-state">None found</div></div>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- AGENT TERMINALS -->
+  <div class="panel" id="panel-agents-terminal">
+    <div class="toolbar">
+      <h3 style="margin:0;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Per-Agent Terminals</h3>
+      <span style="margin-left:auto;font-size:11px;color:var(--muted)" id="agentTermCount">0 agents</span>
+    </div>
+    <div class="grid-4" id="agentTermGrid">
+      <div class="empty-state">Agents will appear here when a pentest is running. Each agent gets its own terminal.</div>
+    </div>
+  </div>
+
+  <!-- LIVE TERMINAL -->
+  <div class="panel flex-col" id="panel-terminal">
+    <div class="toolbar">
+      <button class="btn-ghost active" data-filter="all" onclick="setTermFilter('all',this)">All</button>
+      <button class="btn-ghost" data-filter="command" onclick="setTermFilter('command',this)">Commands</button>
+      <button class="btn-ghost" data-filter="stdout" onclick="setTermFilter('stdout',this)">Stdout</button>
+      <button class="btn-ghost" data-filter="stderr" onclick="setTermFilter('stderr',this)">Stderr</button>
+      <button class="btn-ghost" data-filter="agent" onclick="setTermFilter('agent',this)">Agents</button>
+      <button class="btn-ghost" data-filter="error" onclick="setTermFilter('error',this)">Errors</button>
+      <input class="search-input" placeholder="Search terminal..." oninput="filterTerminal(this.value)" style="margin-left:auto">
+      <button class="btn-ghost" onclick="exportTerminal()">Export</button>
+      <button class="btn-ghost" onclick="clearTerminal()">Clear</button>
+    </div>
+    <div class="terminal flex-1" id="fullTerminal"></div>
+  </div>
+
   <!-- NEW PENTEST -->
   <div class="panel" id="panel-pentest">
     <div class="card" style="max-width:700px">
-      <h3>Launch New Pentest</h3>
+      <h3>Launch New Penetration Test</h3>
       <form id="pentestForm">
         <div class="form-row">
           <div><label>Target Domain / IP</label><input id="fTarget" placeholder="example.com or 192.168.1.0/24" required></div>
-          <div><label>Scan Type</label><select id="fScanType"><option value="full">Full (All Phases)</option><option value="web">Web Application</option><option value="network">Network</option><option value="quick">Quick Scan</option><option value="compliance">Compliance</option></select></div>
+          <div><label>Scan Type</label><select id="fScanType"><option value="full">Full (All 5 Phases)</option><option value="web">Web Application</option><option value="network">Network Infrastructure</option><option value="quick">Quick Recon</option><option value="compliance">Compliance (No Exploit)</option></select></div>
         </div>
         <div class="form-row">
-          <div><label>Client / Company Name</label><input id="fClient" placeholder="Acme Corp"></div>
+          <div><label>Client / Company</label><input id="fClient" placeholder="Acme Corp"></div>
           <div><label>Authorized By</label><input id="fAuthBy" placeholder="John Doe"></div>
         </div>
         <div class="form-group"><label>In-Scope Targets (comma-separated)</label><input id="fInScope" placeholder="*.example.com, 10.0.0.0/24"></div>
-        <div class="form-group"><label>Out-of-Scope (comma-separated, optional)</label><input id="fOutScope" placeholder="mail.example.com, 10.0.0.1"></div>
-        <div style="margin-top:16px;display:flex;gap:12px">
+        <div class="form-group"><label>Out-of-Scope (optional)</label><input id="fOutScope" placeholder="mail.example.com"></div>
+        <div style="margin-top:14px;display:flex;gap:10px;align-items:center">
           <button type="submit" class="btn btn-primary">Launch Pentest</button>
-          <span id="launchStatus" style="line-height:40px;font-size:13px"></span>
+          <span id="launchStatus" style="font-size:12px"></span>
         </div>
       </form>
     </div>
     <div class="card" style="max-width:700px">
-      <h3>Existing Auth Documents</h3>
+      <h3>Authorization Documents</h3>
       <div id="scopeList"><div class="empty-state">Loading...</div></div>
     </div>
   </div>
 
-  <!-- TERMINAL -->
-  <div class="panel flex-col" id="panel-terminal">
-    <div class="terminal flex-1" id="fullTerminal"></div>
-  </div>
-
   <!-- AGENTS -->
   <div class="panel" id="panel-agents">
-    <div class="card"><h3>Active Agents</h3>
-      <div class="grid-2" id="agentGrid"><div class="empty-state">No agents running.</div></div>
+    <div class="card">
+      <h3>Agent Pool <span id="agentPoolCount" style="color:var(--muted);font-size:11px"></span></h3>
+      <div class="grid-2" id="agentGrid"><div class="empty-state">No agents running</div></div>
     </div>
   </div>
 
   <!-- VULNERABILITIES -->
   <div class="panel flex-col" id="panel-vulns">
+    <div class="toolbar">
+      <button class="btn-ghost active" onclick="setVulnFilter('all',this)">All</button>
+      <button class="btn-ghost" onclick="setVulnFilter('critical',this)">Critical</button>
+      <button class="btn-ghost" onclick="setVulnFilter('high',this)">High</button>
+      <button class="btn-ghost" onclick="setVulnFilter('medium',this)">Medium</button>
+      <button class="btn-ghost" onclick="setVulnFilter('low',this)">Low</button>
+      <button class="btn-ghost" onclick="setVulnFilter('info',this)">Info</button>
+      <input class="search-input" placeholder="Search vulnerabilities..." oninput="filterVulns(this.value)" style="margin-left:auto">
+      <span id="vulnCount" style="font-size:11px;color:var(--muted)"></span>
+    </div>
     <div class="card flex-col flex-1">
-      <h3>All Vulnerabilities <span id="vulnCount" style="color:var(--muted);font-size:12px"></span></h3>
-      <div class="scroll-y flex-1" id="vulnList"><div class="empty-state">No vulnerabilities found yet.</div></div>
+      <div class="scroll-y flex-1" id="vulnList"><div class="empty-state">No vulnerabilities found yet</div></div>
+    </div>
+  </div>
+
+  <!-- REPORTS -->
+  <div class="panel" id="panel-reports">
+    <div class="card" style="max-width:800px">
+      <h3>Report Generation</h3>
+      <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="generateReport('html')">Generate HTML Report</button>
+        <button class="btn btn-secondary" onclick="generateReport('markdown')">Markdown</button>
+        <button class="btn btn-secondary" onclick="generateReport('json')">JSON Export</button>
+        <button class="btn btn-secondary" onclick="downloadAllReports()">Download All</button>
+      </div>
+      <div id="reportStatus" style="font-size:12px;color:var(--muted);margin-bottom:14px"></div>
+    </div>
+    <div class="card" style="max-width:800px">
+      <h3>Generated Reports</h3>
+      <div id="reportsList"><div class="empty-state">No reports generated. Run a pentest first.</div></div>
+    </div>
+    <div class="card" style="max-width:800px">
+      <h3>Per-Vulnerability Reports</h3>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Each vulnerability gets an individual downloadable report with full details, CVSS scoring, and remediation steps.</p>
+      <div id="vulnReportsList"><div class="empty-state">Vulnerability reports will appear as they are generated during the pentest.</div></div>
+    </div>
+  </div>
+
+  <!-- TOOLS -->
+  <div class="panel flex-col" id="panel-tools">
+    <div class="toolbar">
+      <input class="search-input" placeholder="Search tools..." oninput="filterTools(this.value)" style="width:250px">
+      <select id="toolCatFilter" onchange="filterToolsByCat(this.value)" style="width:150px;padding:5px 8px;font-size:11px;border-radius:3px">
+        <option value="all">All Categories</option>
+      </select>
+      <span id="toolCount" style="margin-left:auto;font-size:11px;color:var(--muted)"></span>
+      <button class="btn btn-sm btn-primary" onclick="openCreateTool()">Create Custom Tool</button>
+    </div>
+    <div class="card flex-col flex-1">
+      <div class="scroll-y flex-1" id="toolsList"><div class="empty-state">Loading tools...</div></div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="panel" id="panel-settings">
+    <div style="max-width:600px;display:flex;flex-direction:column;gap:16px">
+      <div class="card">
+        <div class="settings-section">
+          <h4>AI Model</h4>
+          <div class="radio-group" id="modelRadios"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="settings-section">
+          <h4>Summary Interval</h4>
+          <div class="slider-row">
+            <input type="range" min="5" max="60" value="15" id="summaryInterval" oninput="document.getElementById('summaryIntervalVal').textContent=this.value+'m'">
+            <span class="val" id="summaryIntervalVal">15m</span>
+          </div>
+        </div>
+        <div class="settings-section">
+          <h4>Max Concurrent Agents</h4>
+          <div class="slider-row">
+            <input type="range" min="1" max="20" value="10" id="maxAgents" oninput="document.getElementById('maxAgentsVal').textContent=this.value">
+            <span class="val" id="maxAgentsVal">10</span>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="settings-section">
+          <h4>Data Management</h4>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn btn-sm btn-secondary" onclick="clearTerminalData()">Clear Terminal Log</button>
+            <button class="btn btn-sm btn-secondary" onclick="clearVulnData()">Clear Vulnerabilities</button>
+            <button class="btn btn-sm btn-danger" onclick="clearAllData()">Reset All Data</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="settings-section">
+          <h4>Uninstall Ryha Security Flow</h4>
+          <p style="font-size:12px;color:var(--muted);margin-bottom:8px">To completely remove Ryha Security Flow:</p>
+          <pre style="background:#000;padding:12px;border-radius:4px;font-family:var(--mono);font-size:11px;color:var(--green);line-height:1.8;overflow-x:auto">sudo npm unlink -g ryha-security-flow
+cd ~/Ryha-Security-Flow
+cd .. && rm -rf Ryha-Security-Flow
+rm -rf ~/.ryha</pre>
+        </div>
+      </div>
     </div>
   </div>
 </div>
 
+<!-- VULN DETAIL MODAL -->
+<div class="modal-overlay" id="vulnModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeVulnModal()">&times;</button>
+    <h2 id="vulnModalTitle">Vulnerability Detail</h2>
+    <div id="vulnModalBody"></div>
+    <div style="margin-top:16px;display:flex;gap:10px">
+      <button class="btn btn-sm btn-primary" onclick="downloadVulnReport()">Download Report</button>
+      <button class="btn btn-sm btn-secondary" onclick="closeVulnModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- CREATE TOOL MODAL -->
+<div class="modal-overlay" id="toolModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeToolModal()">&times;</button>
+    <h2>Create Custom Security Tool</h2>
+    <div class="form-group"><label>Tool Name</label><input id="ctName" placeholder="my-scanner"></div>
+    <div class="form-row">
+      <div><label>Category</label><select id="ctCat"><option>recon</option><option>web</option><option>scanner</option><option>exploit</option><option>forensics</option><option>network</option><option>wireless</option><option>custom</option></select></div>
+      <div><label>Language</label><select id="ctLang"><option>python</option><option>bash</option><option>ruby</option><option>perl</option><option>go</option><option>nodejs</option></select></div>
+    </div>
+    <div class="form-group"><label>Description</label><textarea id="ctDesc" rows="2" placeholder="What does this tool do?"></textarea></div>
+    <div class="form-group"><label>Purpose / Task</label><textarea id="ctPurpose" rows="3" placeholder="Detailed purpose: e.g., Scan for exposed API keys in public repos"></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:14px">
+      <button class="btn btn-primary" onclick="createCustomTool()">Generate Tool</button>
+      <button class="btn btn-secondary" onclick="closeToolModal()">Cancel</button>
+    </div>
+    <div id="ctStatus" style="margin-top:10px;font-size:12px"></div>
+  </div>
+</div>
+
+<!-- CHAT FAB + PANEL -->
+<button class="chat-fab" id="chatFab" onclick="toggleChat()">&#9993;<span class="chat-badge" id="chatBadge">0</span></button>
+<div class="chat-panel" id="chatPanel">
+  <div class="chat-hdr">AI Summary Feed <span style="margin-left:auto;font-size:10px;color:var(--muted)" id="chatInterval">every 15 min</span></div>
+  <div class="chat-body" id="chatBody">
+    <div class="chat-msg summary"><div class="time">Waiting for pentest to start...</div>Summaries will appear here automatically during a pentest. They include vulnerability counts, agent status, key findings, and phase progress.</div>
+  </div>
+</div>
+
+<!-- STATUS BAR -->
+<div class="statusbar">
+  <span><span class="dot on" id="connDot"></span>Connected</span>
+  <span>Model: <span id="sbModel">sonnet-3.5</span></span>
+  <span>Tools: <span id="sbTools">0</span></span>
+  <span>Agents: <span id="sbAgents">0/10</span></span>
+  <span style="margin-left:auto">Uptime: <span id="sbUptime">0m</span></span>
+</div>
+
 <script>
 const socket = io();
-let state = { vulns: [], agents: new Map(), currentJob: null, phases: [] };
+let state = { vulns: [], agents: new Map(), currentJob: null, phases: [], tools: [], reports: [], summaries: [], jobStartTime: null, toolsRun: 0 };
+let termFilter = 'all', termSearch = '', vulnFilter = 'all', vulnSearch = '';
+let selectedVuln = null, chatOpen = false, unreadSummaries = 0;
+
+// Clock
+setInterval(() => { document.getElementById('hdrClock').textContent = new Date().toLocaleTimeString(); }, 1000);
 
 // Tabs
 document.querySelectorAll('.tab').forEach(tab => {
@@ -202,178 +418,451 @@ document.querySelectorAll('.tab').forEach(tab => {
   });
 });
 
-// Terminal rendering
-function renderTerminalEntry(entry) {
-  const ts = new Date(entry.timestamp).toLocaleTimeString();
-  const agentTag = entry.agent ? '<span class="agent-tag">[' + escapeHtml(entry.agent) + ']</span>' : '';
-  return '<div class="terminal-entry ' + entry.type + '"><span class="ts">' + ts + '</span>' + agentTag + escapeHtml(entry.content) + '</div>';
-}
-function escapeHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+// Helpers
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function ts(t) { return new Date(t).toLocaleTimeString(); }
 
+// Terminal
+function renderTermEntry(e) {
+  return '<div class="terminal-entry ' + e.type + '" data-type="' + e.type + '"><span class="ts">' + ts(e.timestamp) + '</span>' + (e.agent ? '<span class="agent-tag">[' + esc(e.agent) + ']</span>' : '') + esc(e.content) + '</div>';
+}
 function appendTerminal(entry) {
+  const html = renderTermEntry(entry);
   ['dashTerminal', 'fullTerminal'].forEach(id => {
     const el = document.getElementById(id);
-    el.insertAdjacentHTML('beforeend', renderTerminalEntry(entry));
+    el.insertAdjacentHTML('beforeend', html);
     el.scrollTop = el.scrollHeight;
   });
+  // Per-agent terminal
+  if (entry.agent) {
+    const agentId = entry.agent;
+    if (!document.getElementById('aterm-' + CSS.escape(agentId))) createAgentTerminal(agentId);
+    const body = document.getElementById('aterm-body-' + CSS.escape(agentId));
+    if (body) { body.insertAdjacentHTML('beforeend', '<div style="color:' + getTypeColor(entry.type) + '">' + esc(entry.content) + '</div>'); body.scrollTop = body.scrollHeight; }
+  }
+  applyTermFilter();
+}
+function getTypeColor(t) { return t==='command'?'var(--primary)':t==='error'?'var(--red)':t==='success'?'var(--green)':t==='agent'?'var(--purple)':t==='stderr'?'var(--orange)':'#7a8899'; }
+
+function setTermFilter(f, btn) {
+  termFilter = f;
+  document.querySelectorAll('#panel-terminal .btn-ghost[data-filter]').forEach(b => b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  applyTermFilter();
+}
+function applyTermFilter() {
+  document.querySelectorAll('#fullTerminal .terminal-entry').forEach(el => {
+    const typeMatch = termFilter === 'all' || el.dataset.type === termFilter;
+    const searchMatch = !termSearch || el.textContent.toLowerCase().includes(termSearch.toLowerCase());
+    el.style.display = (typeMatch && searchMatch) ? '' : 'none';
+  });
+}
+function filterTerminal(q) { termSearch = q; applyTermFilter(); }
+function exportTerminal() {
+  let text = '';
+  document.querySelectorAll('#fullTerminal .terminal-entry').forEach(el => { if(el.style.display !== 'none') text += el.textContent + '\n'; });
+  downloadFile('terminal-export.txt', text, 'text/plain');
+}
+function clearTerminal() { ['dashTerminal','fullTerminal'].forEach(id => document.getElementById(id).innerHTML = ''); }
+
+// Agent terminals
+function createAgentTerminal(agentId) {
+  const grid = document.getElementById('agentTermGrid');
+  if (grid.querySelector('.empty-state')) grid.innerHTML = '';
+  const status = state.agents.get(agentId)?.status || 'working';
+  const name = state.agents.get(agentId)?.name || agentId;
+  const card = document.createElement('div');
+  card.className = 'agent-term-card';
+  card.id = 'aterm-' + CSS.escape(agentId);
+  card.innerHTML = '<div class="agent-term-hdr"><div class="agent-term-dot ' + status + '" id="aterm-dot-' + CSS.escape(agentId) + '"></div><span>' + esc(name) + '</span></div><div class="agent-term-body" id="aterm-body-' + CSS.escape(agentId) + '"></div>';
+  grid.appendChild(card);
+  updateAgentTermCount();
+}
+function updateAgentTermDot(agentId, status) {
+  const dot = document.getElementById('aterm-dot-' + CSS.escape(agentId));
+  if (dot) { dot.className = 'agent-term-dot ' + status; }
+}
+function updateAgentTermCount() {
+  document.getElementById('agentTermCount').textContent = document.querySelectorAll('.agent-term-card').length + ' agents';
 }
 
 // Socket events
+socket.on('connect', () => { document.getElementById('connDot').className = 'dot on'; });
+socket.on('disconnect', () => { document.getElementById('connDot').className = 'dot off'; });
+
 socket.on('terminal:history', entries => {
-  const html = entries.map(renderTerminalEntry).join('');
-  ['dashTerminal', 'fullTerminal'].forEach(id => {
-    const el = document.getElementById(id);
-    el.innerHTML = html;
-    el.scrollTop = el.scrollHeight;
-  });
+  const html = entries.map(renderTermEntry).join('');
+  ['dashTerminal', 'fullTerminal'].forEach(id => { const el = document.getElementById(id); el.innerHTML = html; el.scrollTop = el.scrollHeight; });
 });
-socket.on('terminal:entry', entry => appendTerminal(entry));
+socket.on('terminal:entry', entry => { appendTerminal(entry); if(entry.type === 'command') state.toolsRun++; updateStats(); });
 
 socket.on('vulnerability:found', data => {
   state.vulns.push(data.vulnerability);
   renderVulns();
-  document.getElementById('statVulns').textContent = state.vulns.length;
+  updateStats();
+  const b = document.getElementById('vulnBadge');
+  b.textContent = state.vulns.length; b.style.display = '';
 });
 
 socket.on('agent:started', data => {
-  state.agents.set(data.agentId, { id: data.agentId, name: data.name, status: 'working' });
-  renderAgents();
-  document.getElementById('statAgents').textContent = [...state.agents.values()].filter(a => a.status === 'working').length;
+  state.agents.set(data.agentId, { id: data.agentId, name: data.name, status: 'working', task: data.task || '' });
+  renderAgents(); updateStats();
+  if (!document.getElementById('aterm-' + CSS.escape(data.agentId))) createAgentTerminal(data.agentId);
 });
 socket.on('agent:completed', data => {
-  const a = state.agents.get(data.agentId);
-  if (a) a.status = 'completed';
-  renderAgents();
-  document.getElementById('statAgents').textContent = [...state.agents.values()].filter(a => a.status === 'working').length;
+  const a = state.agents.get(data.agentId); if(a) a.status = 'completed';
+  renderAgents(); updateStats();
+  updateAgentTermDot(data.agentId, 'completed');
 });
 socket.on('agent:failed', data => {
-  const a = state.agents.get(data.agentId);
-  if (a) a.status = 'failed';
+  const a = state.agents.get(data.agentId); if(a) a.status = 'failed';
   renderAgents();
+  updateAgentTermDot(data.agentId, 'failed');
 });
 
 socket.on('phase:started', data => {
   const existing = state.phases.find(p => p.name === data.phase);
-  if (existing) { existing.status = 'running'; } else { state.phases.push({ name: data.phase, status: 'running', findings: 0 }); }
+  if(existing) existing.status = 'running'; else state.phases.push({ name: data.phase, status: 'running', findings: 0 });
   renderPhases();
 });
 socket.on('phase:complete', data => {
   const p = state.phases.find(ph => ph.name === data.phase);
-  if (p) { p.status = 'completed'; p.findings = data.findings; }
-  renderPhases();
-  updateProgress();
-});
-socket.on('job:started', jobId => {
-  state.currentJob = { id: jobId, status: 'running' };
-  document.getElementById('currentJob').innerHTML = '<div><strong>Job:</strong> ' + jobId.substring(0,8) + '...</div><div><strong>Status:</strong> <span style="color:var(--yellow)">Running</span></div>';
-  document.getElementById('jobPill').style.display = '';
-  document.getElementById('jobPill').className = 'pill yellow';
-  document.getElementById('jobPill').textContent = 'RUNNING';
-});
-socket.on('job:complete', data => {
-  if (state.currentJob) state.currentJob.status = 'completed';
-  document.getElementById('currentJob').innerHTML = '<div><strong>Job:</strong> ' + data.jobId.substring(0,8) + '...</div><div><strong>Status:</strong> <span style="color:var(--green)">Completed</span></div><div><strong>Vulns:</strong> ' + data.vulnerabilityCount + '</div>';
-  document.getElementById('jobPill').className = 'pill green';
-  document.getElementById('jobPill').textContent = 'COMPLETE';
-  document.getElementById('statProgress').textContent = '100%';
-});
-socket.on('job:failed', data => {
-  document.getElementById('jobPill').className = 'pill red';
-  document.getElementById('jobPill').textContent = 'FAILED';
+  if(p) { p.status = 'completed'; p.findings = data.findings; }
+  renderPhases(); updateProgress();
 });
 
+socket.on('job:started', jobId => {
+  state.currentJob = { id: jobId, status: 'running' };
+  state.jobStartTime = Date.now();
+  document.getElementById('currentJob').innerHTML = '<div style="font-size:12px"><strong>Job:</strong> ' + jobId.substring(0,8) + '...</div><div style="font-size:12px"><strong>Status:</strong> <span style="color:var(--yellow)">Running</span></div>';
+  const jp = document.getElementById('jobPill'); jp.style.display=''; jp.className='pill yellow'; jp.textContent='RUNNING';
+});
+socket.on('job:complete', data => {
+  if(state.currentJob) state.currentJob.status = 'completed';
+  document.getElementById('currentJob').innerHTML = '<div style="font-size:12px"><strong>Job:</strong> ' + data.jobId.substring(0,8) + '...</div><div style="font-size:12px"><strong>Status:</strong> <span style="color:var(--green)">Complete</span></div><div style="font-size:12px"><strong>Vulns:</strong> ' + data.vulnerabilityCount + '</div>';
+  const jp = document.getElementById('jobPill'); jp.className='pill green'; jp.textContent='COMPLETE';
+  document.getElementById('statProgress').textContent = '100%';
+  addSummary('Pentest complete! ' + data.vulnerabilityCount + ' vulnerabilities found across ' + state.phases.length + ' phases. ' + state.agents.size + ' agents used.');
+});
+socket.on('job:failed', data => {
+  const jp = document.getElementById('jobPill'); jp.className='pill red'; jp.textContent='FAILED';
+  addSummary('Pentest failed: ' + (data.error || 'Unknown error'));
+});
+
+socket.on('summary:generated', data => { addSummary(data.summary); });
+
+// Rendering
+function updateStats() {
+  document.getElementById('statVulns').textContent = state.vulns.length;
+  const active = [...state.agents.values()].filter(a => a.status === 'working').length;
+  document.getElementById('statAgents').textContent = active;
+  document.getElementById('sbAgents').textContent = active + '/' + (document.getElementById('maxAgents')?.value || 10);
+  document.getElementById('statToolsRun').textContent = state.toolsRun;
+  if (state.jobStartTime) {
+    const mins = Math.floor((Date.now() - state.jobStartTime) / 60000);
+    document.getElementById('statElapsed').textContent = mins + 'm';
+    if (mins > 0) document.getElementById('statFindRate').textContent = Math.round(state.vulns.length / (mins / 60));
+  }
+}
 function updateProgress() {
   if (state.phases.length === 0) return;
   const done = state.phases.filter(p => p.status === 'completed').length;
-  const pct = Math.round((done / state.phases.length) * 100);
-  document.getElementById('statProgress').textContent = pct + '%';
+  document.getElementById('statProgress').textContent = Math.round((done / state.phases.length) * 100) + '%';
 }
 
 function renderVulns() {
   const list = document.getElementById('vulnList');
   const latest = document.getElementById('latestVulns');
-  if (state.vulns.length === 0) { list.innerHTML = '<div class="empty-state">None yet.</div>'; latest.innerHTML = '<div class="empty-state">None yet.</div>'; return; }
-  const html = state.vulns.map(v => '<div class="vuln-row"><span class="sev ' + v.severity + '">' + v.severity + '</span><span class="vuln-title">' + escapeHtml(v.title) + '</span><span class="vuln-agent">' + escapeHtml(v.foundBy || v.discoveredBy || '') + '</span></div>').join('');
-  list.innerHTML = html;
-  latest.innerHTML = state.vulns.slice(-5).reverse().map(v => '<div class="vuln-row"><span class="sev ' + v.severity + '">' + v.severity + '</span><span class="vuln-title">' + escapeHtml(v.title) + '</span></div>').join('');
-  document.getElementById('vulnCount').textContent = '(' + state.vulns.length + ')';
+  const filtered = state.vulns.filter(v => {
+    if (vulnFilter !== 'all' && v.severity !== vulnFilter) return false;
+    if (vulnSearch && !v.title.toLowerCase().includes(vulnSearch.toLowerCase())) return false;
+    return true;
+  });
+  if (filtered.length === 0) { list.innerHTML = '<div class="empty-state">No matching vulnerabilities</div>'; }
+  else { list.innerHTML = filtered.map((v, i) => '<div class="vuln-row" onclick="openVulnDetail(' + state.vulns.indexOf(v) + ')"><span class="sev ' + v.severity + '">' + v.severity + '</span><span class="vuln-title">' + esc(v.title) + '</span><span class="vuln-cvss">' + (v.cvss || '--') + '</span><span class="vuln-agent">' + esc(v.foundBy || v.discoveredBy || '') + '</span></div>').join(''); }
+  document.getElementById('vulnCount').textContent = state.vulns.length + ' total, ' + filtered.length + ' shown';
+  if (state.vulns.length > 0) latest.innerHTML = state.vulns.slice(-5).reverse().map(v => '<div class="vuln-row" style="padding:6px 0"><span class="sev ' + v.severity + '">' + v.severity + '</span><span class="vuln-title" style="font-size:12px">' + esc(v.title) + '</span></div>').join('');
 }
+function setVulnFilter(f, btn) {
+  vulnFilter = f;
+  document.querySelectorAll('#panel-vulns .toolbar .btn-ghost').forEach(b => b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  renderVulns();
+}
+function filterVulns(q) { vulnSearch = q; renderVulns(); }
 
 function renderAgents() {
   const grid = document.getElementById('agentGrid');
   const agents = [...state.agents.values()];
-  if (agents.length === 0) { grid.innerHTML = '<div class="empty-state">No agents.</div>'; return; }
-  grid.innerHTML = agents.map(a => '<div class="agent-card"><div class="agent-dot ' + a.status + '"></div><div class="agent-info"><div class="agent-name">' + escapeHtml(a.name) + '</div></div><div class="agent-status" style="color:var(--' + (a.status==='working'?'yellow':a.status==='completed'?'green':a.status==='failed'?'red':'muted') + ')">' + a.status + '</div></div>').join('');
+  document.getElementById('agentPoolCount').textContent = '(' + agents.length + ' agents)';
+  if (agents.length === 0) { grid.innerHTML = '<div class="empty-state">No agents</div>'; return; }
+  grid.innerHTML = agents.map(a => '<div class="agent-card"><div class="agent-dot ' + a.status + '"></div><div class="agent-info"><div class="agent-name">' + esc(a.name) + '</div><div class="agent-task">' + esc(a.task || '') + '</div></div><div class="agent-status" style="color:var(--' + (a.status==='working'?'yellow':a.status==='completed'?'green':a.status==='failed'?'red':'muted') + ')">' + a.status + '</div></div>').join('');
 }
 
 function renderPhases() {
   const list = document.getElementById('phaseList');
-  if (state.phases.length === 0) { list.innerHTML = '<div class="empty-state">No phases.</div>'; return; }
-  var icons = { pending: '&#x2022;', running: '&#x25B6;', completed: '&#x2713;', failed: '&#x2717;' };
-  list.innerHTML = state.phases.map(p => '<div class="phase-item"><div class="phase-icon ' + p.status + '">' + (icons[p.status]||'?') + '</div><div class="phase-name">' + escapeHtml(p.name) + '</div><div class="phase-findings">' + p.findings + ' findings</div></div>').join('');
+  if (state.phases.length === 0) { list.innerHTML = '<div class="empty-state">No phases</div>'; return; }
+  const icons = { pending: '&#x2022;', running: '&#x25B6;', completed: '&#x2713;', failed: '&#x2717;' };
+  list.innerHTML = state.phases.map(p => '<div class="phase-item"><div class="phase-icon ' + p.status + '">' + (icons[p.status]||'?') + '</div><div class="phase-name">' + esc(p.name) + '</div><div class="phase-findings">' + p.findings + ' findings</div></div>').join('');
+}
+
+// Vuln modal
+function openVulnDetail(idx) {
+  selectedVuln = state.vulns[idx];
+  if (!selectedVuln) return;
+  document.getElementById('vulnModalTitle').textContent = selectedVuln.title;
+  document.getElementById('vulnModalBody').innerHTML =
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">' +
+    '<div><label>Severity</label><div class="sev ' + selectedVuln.severity + '" style="display:inline-block">' + selectedVuln.severity + '</div></div>' +
+    '<div><label>CVSS Score</label><div style="font-family:var(--mono);font-size:18px;font-weight:700">' + (selectedVuln.cvss || 'N/A') + '</div></div>' +
+    '<div><label>Found By</label><div>' + esc(selectedVuln.foundBy || selectedVuln.discoveredBy || 'Unknown') + '</div></div>' +
+    '<div><label>Category</label><div>' + esc(selectedVuln.category || 'General') + '</div></div></div>' +
+    '<label>Description</label><div style="font-size:13px;margin-bottom:10px;line-height:1.6">' + esc(selectedVuln.description || 'No description available.') + '</div>' +
+    '<label>Remediation</label><div style="font-size:13px;line-height:1.6;color:var(--green)">' + esc(selectedVuln.remediation || selectedVuln.fix || 'Refer to vendor documentation for patching.') + '</div>' +
+    (selectedVuln.evidence ? '<label style="margin-top:10px">Evidence</label><pre style="background:#000;padding:10px;border-radius:4px;font-family:var(--mono);font-size:11px;color:#7a8899;overflow-x:auto;max-height:200px">' + esc(selectedVuln.evidence) + '</pre>' : '') +
+    (selectedVuln.references ? '<label style="margin-top:10px">References</label><div style="font-size:12px">' + esc(selectedVuln.references) + '</div>' : '');
+  document.getElementById('vulnModal').classList.add('active');
+}
+function closeVulnModal() { document.getElementById('vulnModal').classList.remove('active'); }
+function downloadVulnReport() {
+  if (!selectedVuln) return;
+  const html = generateVulnReportHTML(selectedVuln);
+  downloadFile('vuln-report-' + (selectedVuln.title || 'unknown').replace(/[^a-z0-9]/gi,'-').substring(0,40) + '.html', html, 'text/html');
+}
+
+// Report generation
+function generateReport(fmt) {
+  const el = document.getElementById('reportStatus');
+  el.textContent = 'Generating ' + fmt + ' report...'; el.style.color = 'var(--yellow)';
+  if (state.vulns.length === 0) { el.textContent = 'No vulnerabilities to report.'; el.style.color = 'var(--red)'; return; }
+  if (fmt === 'json') {
+    const data = { generatedAt: new Date().toISOString(), model: document.getElementById('modelSelect').value, phases: state.phases, vulnerabilities: state.vulns, agentCount: state.agents.size, toolsRun: state.toolsRun };
+    downloadFile('ryha-report.json', JSON.stringify(data, null, 2), 'application/json');
+  } else if (fmt === 'markdown') {
+    downloadFile('ryha-report.md', generateMarkdownReport(), 'text/markdown');
+  } else {
+    downloadFile('ryha-report.html', generateFullReportHTML(), 'text/html');
+  }
+  el.textContent = fmt.toUpperCase() + ' report downloaded.'; el.style.color = 'var(--green)';
+  addReportEntry(fmt);
+}
+
+function generateFullReportHTML() {
+  const crit = state.vulns.filter(v=>v.severity==='critical').length, high = state.vulns.filter(v=>v.severity==='high').length, med = state.vulns.filter(v=>v.severity==='medium').length, low = state.vulns.filter(v=>v.severity==='low').length, info = state.vulns.filter(v=>v.severity==='info').length;
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Ryha Security Assessment Report</title><style>body{font-family:Arial,sans-serif;max-width:900px;margin:0 auto;padding:40px;color:#1a1a2e;line-height:1.6}h1{color:#0a1628;border-bottom:3px solid #00d4ff;padding-bottom:10px}h2{color:#0f1d35;margin-top:30px;border-bottom:1px solid #ddd;padding-bottom:5px}h3{color:#333}.summary-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:20px 0}.summary-card{text-align:center;padding:15px;border-radius:6px}.summary-card .num{font-size:32px;font-weight:bold}.critical{background:#ffe5e5;color:#d32f2f}.high{background:#fff3e0;color:#e65100}.medium{background:#fff8e1;color:#f9a825}.low{background:#e0f7fa;color:#0097a7}.info{background:#f5f5f5;color:#666}table{width:100%;border-collapse:collapse;margin:15px 0}th,td{padding:10px;text-align:left;border-bottom:1px solid #eee}th{background:#f5f5f5;font-weight:600}.sev-badge{padding:3px 8px;border-radius:3px;font-size:11px;font-weight:700;color:#fff}.sev-critical{background:#d32f2f}.sev-high{background:#e65100}.sev-medium{background:#f9a825;color:#333}.sev-low{background:#0097a7}.sev-info{background:#999}.footer{margin-top:40px;padding-top:20px;border-top:2px solid #eee;text-align:center;color:#999;font-size:12px}</style></head><body>' +
+  '<h1>Penetration Test Report</h1><p><strong>Generated:</strong> ' + new Date().toLocaleString() + '</p><p><strong>Target:</strong> ' + esc(state.currentJob?.target || 'N/A') + '</p><p><strong>AI Model:</strong> ' + document.getElementById('modelSelect').value + '</p>' +
+  '<h2>Executive Summary</h2><p>This assessment identified <strong>' + state.vulns.length + '</strong> vulnerabilities across ' + state.phases.length + ' testing phases using ' + state.agents.size + ' concurrent AI agents.</p>' +
+  '<div class="summary-grid"><div class="summary-card critical"><div class="num">' + crit + '</div>Critical</div><div class="summary-card high"><div class="num">' + high + '</div>High</div><div class="summary-card medium"><div class="num">' + med + '</div>Medium</div><div class="summary-card low"><div class="num">' + low + '</div>Low</div><div class="summary-card info"><div class="num">' + info + '</div>Info</div></div>' +
+  '<h2>Vulnerability Details</h2><table><tr><th>Severity</th><th>Title</th><th>CVSS</th><th>Found By</th><th>Remediation</th></tr>' +
+  state.vulns.map(v => '<tr><td><span class="sev-badge sev-' + v.severity + '">' + v.severity.toUpperCase() + '</span></td><td>' + esc(v.title) + '</td><td>' + (v.cvss || '--') + '</td><td>' + esc(v.foundBy || v.discoveredBy || '') + '</td><td>' + esc(v.remediation || v.fix || 'See vendor docs') + '</td></tr>').join('') +
+  '</table><h2>Phase Summary</h2><table><tr><th>Phase</th><th>Status</th><th>Findings</th></tr>' +
+  state.phases.map(p => '<tr><td>' + esc(p.name) + '</td><td>' + p.status + '</td><td>' + p.findings + '</td></tr>').join('') +
+  '</table><div class="footer">Generated by Ryha Security Flow v1.0.0 | AI-Powered Enterprise Pentesting Platform</div></body></html>';
+}
+
+function generateMarkdownReport() {
+  let md = '# Penetration Test Report\n\n**Generated:** ' + new Date().toLocaleString() + '\n**Target:** ' + (state.currentJob?.target || 'N/A') + '\n**Model:** ' + document.getElementById('modelSelect').value + '\n\n## Executive Summary\n\n' + state.vulns.length + ' vulnerabilities found.\n\n| Severity | Count |\n|----------|-------|\n| Critical | ' + state.vulns.filter(v=>v.severity==='critical').length + ' |\n| High | ' + state.vulns.filter(v=>v.severity==='high').length + ' |\n| Medium | ' + state.vulns.filter(v=>v.severity==='medium').length + ' |\n| Low | ' + state.vulns.filter(v=>v.severity==='low').length + ' |\n| Info | ' + state.vulns.filter(v=>v.severity==='info').length + ' |\n\n## Vulnerabilities\n\n';
+  state.vulns.forEach((v,i) => { md += '### ' + (i+1) + '. ' + v.title + '\n- **Severity:** ' + v.severity + '\n- **CVSS:** ' + (v.cvss||'N/A') + '\n- **Found By:** ' + (v.foundBy||v.discoveredBy||'') + '\n- **Remediation:** ' + (v.remediation||v.fix||'See vendor docs') + '\n\n'; });
+  md += '---\n*Generated by Ryha Security Flow*\n';
+  return md;
+}
+
+function generateVulnReportHTML(v) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Vulnerability: ' + esc(v.title) + '</title><style>body{font-family:Arial,sans-serif;max-width:700px;margin:0 auto;padding:40px;color:#1a1a2e;line-height:1.6}h1{font-size:20px;border-bottom:2px solid #00d4ff;padding-bottom:8px}.field{margin-bottom:12px}.field label{font-weight:600;color:#666;font-size:12px;text-transform:uppercase;display:block;margin-bottom:2px}.sev{display:inline-block;padding:4px 12px;border-radius:4px;font-weight:700;color:#fff;font-size:12px}.critical{background:#d32f2f}.high{background:#e65100}.medium{background:#f9a825;color:#333}.low{background:#0097a7}.info{background:#999}</style></head><body>' +
+  '<h1>' + esc(v.title) + '</h1>' +
+  '<div class="field"><label>Severity</label><span class="sev ' + v.severity + '">' + v.severity.toUpperCase() + '</span></div>' +
+  '<div class="field"><label>CVSS Score</label>' + (v.cvss || 'N/A') + '</div>' +
+  '<div class="field"><label>Found By</label>' + esc(v.foundBy || v.discoveredBy || 'Unknown') + '</div>' +
+  '<div class="field"><label>Description</label>' + esc(v.description || 'No description.') + '</div>' +
+  '<div class="field"><label>Remediation</label>' + esc(v.remediation || v.fix || 'Refer to vendor documentation.') + '</div>' +
+  (v.evidence ? '<div class="field"><label>Evidence</label><pre style="background:#f5f5f5;padding:10px;font-size:12px;overflow-x:auto">' + esc(v.evidence) + '</pre></div>' : '') +
+  '<hr><p style="color:#999;font-size:11px">Generated by Ryha Security Flow | ' + new Date().toLocaleString() + '</p></body></html>';
+}
+
+function addReportEntry(fmt) {
+  const entry = { format: fmt, time: Date.now() };
+  state.reports.push(entry);
+  renderReports();
+}
+function renderReports() {
+  const el = document.getElementById('reportsList');
+  if (state.reports.length === 0) { el.innerHTML = '<div class="empty-state">No reports yet.</div>'; return; }
+  el.innerHTML = state.reports.map(r => '<div class="report-card"><div class="report-icon">' + r.format.charAt(0).toUpperCase() + '</div><div class="report-info"><div class="report-name">' + r.format.toUpperCase() + ' Report</div><div class="report-meta">Generated ' + new Date(r.time).toLocaleString() + '</div></div></div>').join('');
+}
+function downloadAllReports() {
+  generateReport('html');
+  setTimeout(() => generateReport('markdown'), 500);
+  setTimeout(() => generateReport('json'), 1000);
+}
+
+// Tools
+async function loadTools() {
+  try {
+    const resp = await fetch('/api/tools');
+    const data = await resp.json();
+    if (data.success) {
+      state.tools = data.tools || [];
+      renderTools();
+      document.getElementById('sbTools').textContent = state.tools.length;
+      const cats = [...new Set(state.tools.map(t => t.category))].sort();
+      const sel = document.getElementById('toolCatFilter');
+      cats.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; sel.appendChild(o); });
+    }
+  } catch(e) { console.error('Failed to load tools:', e); }
+}
+function renderTools() {
+  const el = document.getElementById('toolsList');
+  const cat = document.getElementById('toolCatFilter').value;
+  const q = document.querySelector('#panel-tools .search-input')?.value?.toLowerCase() || '';
+  const filtered = state.tools.filter(t => (cat === 'all' || t.category === cat) && (!q || t.name.toLowerCase().includes(q) || (t.description||'').toLowerCase().includes(q)));
+  document.getElementById('toolCount').textContent = filtered.length + ' of ' + state.tools.length + ' tools';
+  if (filtered.length === 0) { el.innerHTML = '<div class="empty-state">No matching tools</div>'; return; }
+  el.innerHTML = filtered.map(t => '<div class="tool-row"><span class="tool-name">' + esc(t.name) + '</span><span class="tool-cat">' + esc(t.category) + '</span><span class="tool-desc">' + esc(t.description || '') + '</span></div>').join('');
+}
+function filterTools(q) { renderTools(); }
+function filterToolsByCat(c) { renderTools(); }
+function openCreateTool() { document.getElementById('toolModal').classList.add('active'); }
+function closeToolModal() { document.getElementById('toolModal').classList.remove('active'); }
+async function createCustomTool() {
+  const st = document.getElementById('ctStatus');
+  st.textContent = 'Generating tool with AI...'; st.style.color = 'var(--yellow)';
+  try {
+    const resp = await fetch('/api/tools/create', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: document.getElementById('ctName').value, category: document.getElementById('ctCat').value, language: document.getElementById('ctLang').value, description: document.getElementById('ctDesc').value, purpose: document.getElementById('ctPurpose').value })
+    });
+    const data = await resp.json();
+    if (data.success) { st.textContent = 'Tool created!'; st.style.color = 'var(--green)'; loadTools(); }
+    else { st.textContent = 'Error: ' + data.error; st.style.color = 'var(--red)'; }
+  } catch (e) { st.textContent = 'Network error'; st.style.color = 'var(--red)'; }
+}
+
+// Chat / Summaries
+function toggleChat() {
+  chatOpen = !chatOpen;
+  document.getElementById('chatPanel').classList.toggle('active', chatOpen);
+  if (chatOpen) { unreadSummaries = 0; document.getElementById('chatBadge').style.display = 'none'; }
+}
+function addSummary(text) {
+  state.summaries.push({ time: Date.now(), text });
+  const body = document.getElementById('chatBody');
+  body.insertAdjacentHTML('beforeend', '<div class="chat-msg summary"><div class="time">' + new Date().toLocaleTimeString() + '</div>' + esc(text) + '</div>');
+  body.scrollTop = body.scrollHeight;
+  if (!chatOpen) { unreadSummaries++; const b = document.getElementById('chatBadge'); b.textContent = unreadSummaries; b.style.display = 'flex'; }
+}
+
+// Auto-summary timer
+let summaryTimerId = null;
+function startSummaryTimer() {
+  if (summaryTimerId) clearInterval(summaryTimerId);
+  const intervalMs = (parseInt(document.getElementById('summaryInterval').value) || 15) * 60000;
+  document.getElementById('chatInterval').textContent = 'every ' + Math.round(intervalMs/60000) + ' min';
+  summaryTimerId = setInterval(() => {
+    if (state.vulns.length === 0 && state.agents.size === 0) return;
+    const active = [...state.agents.values()].filter(a => a.status === 'working').length;
+    const completed = [...state.agents.values()].filter(a => a.status === 'completed').length;
+    const phaseDone = state.phases.filter(p => p.status === 'completed').length;
+    const summary = 'Auto Summary: ' + state.vulns.length + ' vulns found (' + state.vulns.filter(v=>v.severity==='critical').length + ' critical, ' + state.vulns.filter(v=>v.severity==='high').length + ' high). ' + active + ' agents active, ' + completed + ' completed. ' + phaseDone + '/' + state.phases.length + ' phases done. ' + state.toolsRun + ' tools executed.';
+    addSummary(summary);
+  }, intervalMs);
+}
+
+// Model switching
+async function switchModel(model) {
+  try {
+    await fetch('/api/models/switch', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ model }) });
+    document.getElementById('sbModel').textContent = model.split('-').slice(-2).join('-');
+  } catch(e) { console.error('Model switch failed:', e); }
+}
+
+// Settings
+function initModelRadios() {
+  const models = [
+    { id: 'claude-opus-4-6', label: 'Claude Opus 4.6', desc: 'Best reasoning, complex analysis' },
+    { id: 'claude-3-5-sonnet-20241022', label: 'Sonnet 3.5', desc: 'Fast, balanced (default)' },
+    { id: 'gpt-4o', label: 'GPT-4o', desc: 'Fast multi-modal' },
+    { id: 'gpt-4', label: 'GPT-4', desc: 'Strong reasoning alternative' },
+    { id: 'o1-preview', label: 'o1-preview', desc: 'Advanced deep reasoning' }
+  ];
+  const el = document.getElementById('modelRadios');
+  el.innerHTML = models.map(m => '<label><input type="radio" name="settingsModel" value="' + m.id + '"' + (m.id==='claude-3-5-sonnet-20241022'?' checked':'') + ' onchange="switchModel(this.value);document.getElementById(\'modelSelect\').value=this.value">' + m.label + ' <span style="color:var(--muted);font-size:11px">(' + m.desc + ')</span></label>').join('');
+}
+
+function clearTerminalData() { clearTerminal(); }
+function clearVulnData() { state.vulns = []; renderVulns(); document.getElementById('statVulns').textContent = '0'; document.getElementById('vulnBadge').style.display = 'none'; }
+function clearAllData() { clearTerminal(); clearVulnData(); state.agents.clear(); state.phases = []; state.reports = []; state.summaries = []; state.toolsRun = 0; renderAgents(); renderPhases(); renderReports(); document.getElementById('agentTermGrid').innerHTML = '<div class="empty-state">No agents</div>'; updateStats(); }
+
+// Download helper
+function downloadFile(name, content, mime) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = name; a.click();
+  URL.revokeObjectURL(url);
 }
 
 // Auth check
 fetch('/api/auth/status').then(r=>r.json()).then(d => {
   const pill = document.getElementById('authPill');
-  if (d.authenticated) { pill.className = 'pill green'; pill.textContent = 'AUTHENTICATED'; }
-  else { pill.className = 'pill red'; pill.textContent = 'NOT AUTHENTICATED'; }
-});
+  if (d.authenticated) { pill.className='pill green'; pill.textContent='AUTHENTICATED'; }
+  else { pill.className='pill red'; pill.textContent='NOT AUTH'; }
+}).catch(() => { document.getElementById('authPill').className='pill yellow'; document.getElementById('authPill').textContent='OFFLINE'; });
 
-// Load scope docs
+// Load scopes
 function loadScopes() {
   fetch('/api/scope').then(r=>r.json()).then(d => {
     const el = document.getElementById('scopeList');
-    if (!d.documents || d.documents.length === 0) { el.innerHTML = '<div class="empty-state">No auth documents. Fill the form above to create one automatically.</div>'; return; }
-    el.innerHTML = d.documents.map(doc => '<div style="padding:10px 0;border-bottom:1px solid var(--border)"><strong>' + escapeHtml(doc.clientName) + '</strong> &mdash; ' + escapeHtml(doc.targetDomain) + ' <span class="pill ' + (doc.valid?'green':'red') + '" style="margin-left:8px">' + (doc.valid?'Valid':'Expired') + '</span><div style="font-size:12px;color:var(--muted);margin-top:4px">' + doc.daysRemaining + ' days remaining &middot; ' + doc.testingType.join(', ') + '</div></div>').join('');
-  });
+    if (!d.documents || d.documents.length === 0) { el.innerHTML = '<div class="empty-state">No authorization documents. Create one from the form above.</div>'; return; }
+    el.innerHTML = d.documents.map(doc => '<div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:12px"><strong>' + esc(doc.clientName) + '</strong> &mdash; ' + esc(doc.targetDomain) + ' <span class="pill ' + (doc.valid?'green':'red') + '" style="margin-left:6px">' + (doc.valid?'Valid':'Expired') + '</span><div style="color:var(--muted);margin-top:2px">' + doc.daysRemaining + ' days remaining &middot; ' + doc.testingType.join(', ') + '</div></div>').join('');
+  }).catch(() => {});
 }
 loadScopes();
 
 // Pentest form
 document.getElementById('pentestForm').addEventListener('submit', async e => {
   e.preventDefault();
-  const statusEl = document.getElementById('launchStatus');
-  statusEl.textContent = 'Launching...';
-  statusEl.style.color = 'var(--yellow)';
-
+  const st = document.getElementById('launchStatus');
+  st.textContent = 'Launching...'; st.style.color = 'var(--yellow)';
   const target = document.getElementById('fTarget').value;
-  const body = {
-    target: target,
-    scanType: document.getElementById('fScanType').value,
-    clientName: document.getElementById('fClient').value || target,
-    authorizedBy: document.getElementById('fAuthBy').value || 'web-ui',
-    inScope: document.getElementById('fInScope').value ? document.getElementById('fInScope').value.split(',').map(s=>s.trim()) : [target],
-    outOfScope: document.getElementById('fOutScope').value ? document.getElementById('fOutScope').value.split(',').map(s=>s.trim()) : []
-  };
-
   try {
-    const resp = await fetch('/api/pentest', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const resp = await fetch('/api/pentest', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        target, scanType: document.getElementById('fScanType').value,
+        clientName: document.getElementById('fClient').value || target,
+        authorizedBy: document.getElementById('fAuthBy').value || 'web-ui',
+        inScope: document.getElementById('fInScope').value ? document.getElementById('fInScope').value.split(',').map(s=>s.trim()) : [target],
+        outOfScope: document.getElementById('fOutScope').value ? document.getElementById('fOutScope').value.split(',').map(s=>s.trim()) : []
+      })
+    });
     const data = await resp.json();
     if (data.success) {
-      statusEl.textContent = 'Pentest started! Job: ' + data.jobId.substring(0, 8) + '...';
-      statusEl.style.color = 'var(--green)';
-      state.phases = [];
-      state.vulns = [];
-      state.agents.clear();
-      renderVulns(); renderAgents(); renderPhases();
-      document.getElementById('statVulns').textContent = '0';
-      document.getElementById('statAgents').textContent = '0';
-      document.getElementById('statProgress').textContent = '0%';
+      st.textContent = 'Launched! Job: ' + data.jobId.substring(0,8) + '...'; st.style.color = 'var(--green)';
+      state.phases = []; state.vulns = []; state.agents.clear(); state.toolsRun = 0; state.reports = [];
+      document.getElementById('agentTermGrid').innerHTML = '';
+      renderVulns(); renderAgents(); renderPhases(); renderReports(); updateStats();
       document.querySelector('.tab.active').classList.remove('active');
       document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
       document.querySelector('[data-tab=dashboard]').classList.add('active');
       document.getElementById('panel-dashboard').classList.add('active');
       loadScopes();
-    } else {
-      statusEl.textContent = 'Error: ' + data.error;
-      statusEl.style.color = 'var(--red)';
-    }
-  } catch (err) {
-    statusEl.textContent = 'Network error: ' + err.message;
-    statusEl.style.color = 'var(--red)';
-  }
+      startSummaryTimer();
+    } else { st.textContent = 'Error: ' + data.error; st.style.color = 'var(--red)'; }
+  } catch(err) { st.textContent = 'Network error: ' + err.message; st.style.color = 'var(--red)'; }
 });
+
+// Elapsed timer
+setInterval(() => {
+  if (state.jobStartTime) {
+    const mins = Math.floor((Date.now() - state.jobStartTime) / 60000);
+    document.getElementById('statElapsed').textContent = mins >= 60 ? Math.floor(mins/60) + 'h ' + (mins%60) + 'm' : mins + 'm';
+    document.getElementById('sbUptime').textContent = mins + 'm';
+  }
+}, 10000);
+
+// Init
+loadTools();
+initModelRadios();
+startSummaryTimer();
 </script>
 </body>
 </html>

@@ -9,8 +9,15 @@ declare class RyhaServer {
     private terminalLog;
     private terminalId;
     private activeJobId;
+    private activeModel;
+    private summaries;
+    private summaryId;
+    private summaryInterval;
+    private agentTerminals;
     constructor(port?: number);
     private addTerminalEntry;
+    private addSummary;
+    private startAutoSummary;
     private setupOrchestratorEvents;
     private setupMiddleware;
     private setupRoutes;

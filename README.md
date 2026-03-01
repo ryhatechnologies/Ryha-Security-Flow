@@ -6,20 +6,27 @@ Fully autonomous, AI-driven pentesting platform for Kali Linux that orchestrates
 
 ---
 
-## 🎯 Key Features
+## Key Features
 
 - **Fully Autonomous Pentesting** — AI orchestrates entire assessment without human intervention
 - **300+ Security Tools** — Integrated across 18 categories (recon, scanning, exploitation, forensics, etc.)
 - **5-Phase Framework** — Recon → Scanning → Deep Analysis → Exploitation → Post-Exploitation
-- **Multi-Agent Architecture** — Up to 10 concurrent agents with parallel execution
-- **Web Dashboard** — Real-time terminal, live agent monitoring, vulnerability feed (http://localhost:3000)
+- **Multi-Agent Architecture** — Up to 20 concurrent agents with parallel execution
+- **Professional Web Dashboard** — 9-tab enterprise UI with per-agent terminals, live monitoring, reports
+- **Per-Agent Terminal View** — Each agent gets its own terminal window with real-time output
+- **AI Model Switching** — Switch between 5 AI models live from the dashboard header
 - **GitHub Copilot Integration** — 5 AI models: Claude Opus 4.6, Sonnet, GPT-4o, GPT-4, o1-preview
 - **One-Time Authentication** — GitHub device flow OAuth, auto-detection of authorization documents
 - **Authorization & Compliance** — Scope validation, wildcard/CIDR support, audit logging
-- **Professional Reports** — HTML/PDF/Markdown with executive summaries and remediation advice
-- **Custom Tool Creation** — AI generates security tools on-the-fly (Python, Bash, Ruby, Perl, Go)
+- **Professional Reports** — HTML/Markdown/JSON with executive summaries and remediation advice
+- **Per-Vulnerability Reports** — Individual downloadable report for every vulnerability found
+- **Auto-Summaries** — Configurable 5-60 minute summary feed with vuln counts, agent status, findings
+- **Custom Tool Creation** — Create security tools from the UI (Python, Bash, Ruby, Perl, Go, Node.js)
+- **Tool Browser** — Search, filter, and browse all tools by category from the Tools tab
 - **GitHub Tool Installer** — Auto-detects build system, clone/build/install any security tool
 - **Auto-Install Cascade** — Missing tools auto-installed via apt → pip → go → GitHub → AI-generated
+- **Terminal Filters** — Filter terminal by type (Commands, Stdout, Stderr, Agents, Errors) with search
+- **Settings Panel** — Configure model, summary interval, max agents, data management, uninstall info
 
 ---
 
@@ -112,11 +119,25 @@ cd Ryha-Security-Flow
 # Install dependencies
 npm install
 
-# Build TypeScript
+# Build TypeScript + copy UI assets
 npm run build
 
-# Link CLI globally (optional)
-npm link
+# Link CLI globally (requires sudo on Linux)
+sudo npm link
+```
+
+### Uninstall
+
+```bash
+# Remove global CLI link
+sudo npm unlink -g ryha-security-flow
+
+# Remove the project directory
+cd ~
+rm -rf Ryha-Security-Flow
+
+# Remove configuration and data
+rm -rf ~/.ryha
 ```
 
 ### One-Time Setup (< 5 minutes)
@@ -148,60 +169,61 @@ ryha server -p 8080
 
 Then open **http://localhost:3000** in your browser.
 
-### Dashboard - 5 Tabs
+### Dashboard - 9 Tabs
 
-#### 1️⃣ **Dashboard (Home)**
-- **Stats Bar**: Total vulnerabilities, active agents, progress percentage
+#### 1. **Dashboard (Home)**
+- **Stats Bar**: 6 metrics — Vulnerabilities, Active Agents, Progress, Tools Run, Findings/Hr, Elapsed Time
 - **Live Terminal**: Real-time command output (color-coded by type)
-  - 🔵 Blue = commands being executed
-  - ⚫ Gray = tool stdout
-  - 🟠 Orange = stderr/warnings
-  - 🟢 Green = success messages
-  - 🔴 Red = errors
-  - 🟣 Purple = agent activities
-- **Right Sidebar**:
-  - Current job status (running/completed/failed)
-  - Phase timeline with status indicators
-  - Latest vulnerabilities with severity badges
+- **Right Sidebar**: Current job status, phase timeline, latest vulnerabilities
 
-**Real-Time Updates**: All data updates via Socket.IO as pentest progresses
+#### 2. **Agent Terminals**
+- **Per-agent terminal grid**: Each agent gets its own terminal window
+- **Color-coded status dots**: Working (yellow pulse), Completed (green), Failed (red)
+- **Auto-spawning**: New terminal cards appear as agents spawn during a pentest
+- **Independent scrolling**: Each terminal scrolls independently
 
-#### 2️⃣ **New Pentest**
-Launch a pentest directly from browser:
+#### 3. **Live Terminal**
+- Full-screen terminal with **filter buttons**: All, Commands, Stdout, Stderr, Agents, Errors
+- **Search bar**: Filter terminal output by keyword
+- **Export**: Download terminal log as text file
+- **Clear**: Reset terminal display
 
-```
-Target Domain / IP:     example.com or 192.168.1.0/24
-Scan Type:              Full / Web / Network / Quick / Compliance
-Client / Company Name:  Acme Corp
-Authorized By:          John Doe
-In-Scope Targets:       *.example.com, 10.0.0.0/24
-Out-of-Scope:           mail.example.com (optional)
-```
+#### 4. **New Pentest**
+Launch a pentest directly from browser with target, scan type, client info, and scope
 
-Click **Launch Pentest** → Auto-creates authorization doc → Auto-switches to Dashboard
+#### 5. **Agents**
+Grid view of all agents with status dots, names, current tasks, and status labels
 
-#### 3️⃣ **Live Terminal**
-Full-screen terminal view with all command output:
-- Color-coded by message type
-- Timestamps on each entry
-- Auto-scrolls to bottom
-- Monospace font (Cascadia Code / JetBrains Mono)
+#### 6. **Vulnerabilities**
+- **Severity filter buttons**: All, Critical, High, Medium, Low, Info
+- **Search**: Filter by keyword
+- **Click any row**: Opens detailed vulnerability modal with CVSS, description, remediation, evidence
+- **Download**: Per-vulnerability HTML report from the detail modal
 
-#### 4️⃣ **Agents**
-Grid view of all active agents:
-- ⚫ Gray dot = idle
-- 🟡 Yellow dot (pulsing) = working
-- 🟢 Green dot = completed
-- 🔴 Red dot = failed
+#### 7. **Reports**
+- **Generate**: HTML, Markdown, or JSON reports with one click
+- **Download All**: Generates all three formats at once
+- **Per-vulnerability reports**: Individual downloadable reports for each finding
+- Reports include executive summary, severity breakdown, phase summary, remediation
 
-Shows: Agent name, current status, task description
+#### 8. **Tools**
+- **Search**: Find any tool by name or description
+- **Category filter**: Dropdown to filter by recon, web, scanner, exploit, forensics, etc.
+- **Create Custom Tool**: Modal to generate Python/Bash/Ruby/Perl/Go/Node.js security tools
+- **Tool count**: Shows filtered/total count
 
-#### 5️⃣ **Vulnerabilities**
-Scrollable list of all discovered vulnerabilities:
-- **Severity Badges**: Critical (red), High (orange), Medium (yellow), Low (cyan), Info (gray)
-- **Vuln Title**: Brief description
-- **Discovering Agent**: Which agent found it
-- **Count Summary**: Total found so far
+#### 9. **Settings**
+- **AI Model**: Radio buttons to switch between 5 models
+- **Summary Interval**: Slider (5-60 minutes) for auto-summary frequency
+- **Max Concurrent Agents**: Slider (1-20)
+- **Data Management**: Clear terminal, vulnerabilities, or reset all data
+- **Uninstall Instructions**: Step-by-step removal commands
+
+**Additional UI Features:**
+- **Model Switcher in Header**: Dropdown to change AI model without leaving current tab
+- **Chat/Summary FAB**: Floating button opens summary feed panel with auto-generated summaries
+- **Status Bar**: Connection status, active model, tool count, agent count, uptime
+- **Real-Time Updates**: All data updates via Socket.IO as pentest progresses
 
 ---
 
