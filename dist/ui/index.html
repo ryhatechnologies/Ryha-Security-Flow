@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ryha Security Flow</title>
+<script src="/socket.io/socket.io.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a0e17;--surface:#111827;--surface2:#1a2332;--border:#1e293b;--primary:#06b6d4;--green:#10b981;--red:#ef4444;--yellow:#f59e0b;--orange:#f97316;--purple:#a855f7;--text:#e2e8f0;--muted:#64748b;--font:'Segoe UI',system-ui,-apple-system,sans-serif;--mono:'Cascadia Code','Fira Code','JetBrains Mono',monospace}
+body{background:var(--bg);color:var(--text);font-family:var(--font);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+.header{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;gap:16px;flex-shrink:0}
+.logo{font-size:18px;font-weight:700;color:var(--primary);letter-spacing:1px}
+.logo span{color:var(--text);font-weight:400}
+.status-pills{display:flex;gap:8px;margin-left:auto}
+.pill{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.pill.green{background:#10b98120;color:var(--green)}
+.pill.red{background:#ef444420;color:var(--red)}
+.pill.yellow{background:#f59e0b20;color:var(--yellow)}
+.tabs{display:flex;gap:0;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
+.tab{padding:10px 24px;cursor:pointer;color:var(--muted);font-size:13px;font-weight:500;border-bottom:2px solid transparent;transition:.2s}
+.tab:hover{color:var(--text);background:var(--surface2)}
+.tab.active{color:var(--primary);border-bottom-color:var(--primary)}
+.main{flex:1;overflow:hidden;display:flex}
+.panel{display:none;flex:1;overflow:auto;padding:24px;gap:24px;flex-direction:column}
+.panel.active{display:flex}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px}
+.card h3{font-size:14px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:16px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+.stat{text-align:center;padding:16px}
+.stat .num{font-size:36px;font-weight:700;line-height:1}
+.stat .label{font-size:11px;color:var(--muted);text-transform:uppercase;margin-top:4px}
+input,select,textarea{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:6px;font-size:14px;width:100%;font-family:var(--font)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary)}
+label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.form-group{margin-bottom:12px}
+.btn{padding:10px 24px;border:none;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;transition:.2s;font-family:var(--font)}
+.btn-primary{background:var(--primary);color:#000}
+.btn-primary:hover{filter:brightness(1.1)}
+.btn-danger{background:var(--red);color:#fff}
+.btn-danger:hover{filter:brightness(1.1)}
+.btn-sm{padding:6px 14px;font-size:12px}
+.terminal{background:#000;border-radius:8px;padding:16px;font-family:var(--mono);font-size:12px;line-height:1.6;overflow-y:auto;flex:1;min-height:0}
+.terminal-entry{padding:1px 0;white-space:pre-wrap;word-break:break-all}
+.terminal-entry .ts{color:#555;margin-right:8px}
+.terminal-entry .agent-tag{color:var(--purple);margin-right:6px}
+.terminal-entry.command{color:var(--primary)}
+.terminal-entry.stdout{color:#94a3b8}
+.terminal-entry.stderr{color:var(--orange)}
+.terminal-entry.info{color:var(--primary)}
+.terminal-entry.success{color:var(--green)}
+.terminal-entry.error{color:var(--red)}
+.terminal-entry.agent{color:var(--purple)}
+.agent-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;display:flex;align-items:center;gap:12px}
+.agent-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.agent-dot.idle{background:var(--muted)}
+.agent-dot.working,.agent-dot.running{background:var(--yellow);animation:pulse 1.5s infinite}
+.agent-dot.completed{background:var(--green)}
+.agent-dot.failed{background:var(--red)}
+.agent-info{flex:1;min-width:0}
+.agent-name{font-weight:600;font-size:14px}
+.agent-task{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.agent-status{font-size:11px;text-transform:uppercase;font-weight:600;letter-spacing:.5px}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.vuln-row{display:flex;align-items:center;gap:12px;padding:12px;border-bottom:1px solid var(--border)}
+.vuln-row:last-child{border-bottom:none}
+.sev{padding:3px 10px;border-radius:4px;font-size:11px;font-weight:700;text-transform:uppercase;min-width:70px;text-align:center}
+.sev.critical{background:#ef444430;color:var(--red)}
+.sev.high{background:#f9731630;color:var(--orange)}
+.sev.medium{background:#f59e0b30;color:var(--yellow)}
+.sev.low{background:#06b6d430;color:var(--primary)}
+.sev.info{background:#64748b30;color:var(--muted)}
+.vuln-title{font-weight:500;flex:1}
+.vuln-agent{font-size:12px;color:var(--muted)}
+.phase-list{display:flex;flex-direction:column;gap:8px}
+.phase-item{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface2);border-radius:6px}
+.phase-icon{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+.phase-icon.pending{background:var(--border);color:var(--muted)}
+.phase-icon.running{background:var(--yellow);color:#000;animation:pulse 1.5s infinite}
+.phase-icon.completed{background:var(--green);color:#000}
+.phase-icon.failed{background:var(--red);color:#fff}
+.phase-name{font-weight:500;flex:1}
+.phase-findings{font-size:12px;color:var(--muted)}
+.flex-col{display:flex;flex-direction:column}
+.gap-16{gap:16px}
+.split-h{display:flex;gap:16px;flex:1;min-height:0}
+.split-left{flex:1;display:flex;flex-direction:column;gap:16px;overflow:auto}
+.split-right{width:380px;display:flex;flex-direction:column;gap:16px;overflow:auto}
+.flex-1{flex:1;min-height:0}
+.scroll-y{overflow-y:auto}
+.empty-state{color:var(--muted);text-align:center;padding:40px;font-style:italic}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="logo">RYHA <span>Security Flow</span></div>
+  <div class="status-pills">
+    <div class="pill" id="authPill">...</div>
+    <div class="pill" id="jobPill" style="display:none">...</div>
+  </div>
+</div>
+<div class="tabs">
+  <div class="tab active" data-tab="dashboard">Dashboard</div>
+  <div class="tab" data-tab="pentest">New Pentest</div>
+  <div class="tab" data-tab="terminal">Live Terminal</div>
+  <div class="tab" data-tab="agents">Agents</div>
+  <div class="tab" data-tab="vulns">Vulnerabilities</div>
+</div>
+<div class="main">
+  <!-- DASHBOARD -->
+  <div class="panel active" id="panel-dashboard">
+    <div class="grid-3">
+      <div class="card stat"><div class="num" id="statVulns" style="color:var(--red)">0</div><div class="label">Vulnerabilities</div></div>
+      <div class="card stat"><div class="num" id="statAgents" style="color:var(--primary)">0</div><div class="label">Active Agents</div></div>
+      <div class="card stat"><div class="num" id="statProgress" style="color:var(--green)">0%</div><div class="label">Progress</div></div>
+    </div>
+    <div class="split-h">
+      <div class="split-left">
+        <div class="card flex-col flex-1">
+          <h3>Live Terminal</h3>
+          <div class="terminal" id="dashTerminal"></div>
+        </div>
+      </div>
+      <div class="split-right">
+        <div class="card">
+          <h3>Current Job</h3>
+          <div id="currentJob"><div class="empty-state">No active pentest. Start one from the "New Pentest" tab.</div></div>
+        </div>
+        <div class="card flex-1 flex-col">
+          <h3>Phases</h3>
+          <div class="phase-list" id="phaseList"><div class="empty-state">No phases yet.</div></div>
+        </div>
+        <div class="card">
+          <h3>Latest Vulnerabilities</h3>
+          <div id="latestVulns"><div class="empty-state">None found yet.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NEW PENTEST -->
+  <div class="panel" id="panel-pentest">
+    <div class="card" style="max-width:700px">
+      <h3>Launch New Pentest</h3>
+      <form id="pentestForm">
+        <div class="form-row">
+          <div><label>Target Domain / IP</label><input id="fTarget" placeholder="example.com or 192.168.1.0/24" required></div>
+          <div><label>Scan Type</label><select id="fScanType"><option value="full">Full (All Phases)</option><option value="web">Web Application</option><option value="network">Network</option><option value="quick">Quick Scan</option><option value="compliance">Compliance</option></select></div>
+        </div>
+        <div class="form-row">
+          <div><label>Client / Company Name</label><input id="fClient" placeholder="Acme Corp"></div>
+          <div><label>Authorized By</label><input id="fAuthBy" placeholder="John Doe"></div>
+        </div>
+        <div class="form-group"><label>In-Scope Targets (comma-separated)</label><input id="fInScope" placeholder="*.example.com, 10.0.0.0/24"></div>
+        <div class="form-group"><label>Out-of-Scope (comma-separated, optional)</label><input id="fOutScope" placeholder="mail.example.com, 10.0.0.1"></div>
+        <div style="margin-top:16px;display:flex;gap:12px">
+          <button type="submit" class="btn btn-primary">Launch Pentest</button>
+          <span id="launchStatus" style="line-height:40px;font-size:13px"></span>
+        </div>
+      </form>
+    </div>
+    <div class="card" style="max-width:700px">
+      <h3>Existing Auth Documents</h3>
+      <div id="scopeList"><div class="empty-state">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- TERMINAL -->
+  <div class="panel flex-col" id="panel-terminal">
+    <div class="terminal flex-1" id="fullTerminal"></div>
+  </div>
+
+  <!-- AGENTS -->
+  <div class="panel" id="panel-agents">
+    <div class="card"><h3>Active Agents</h3>
+      <div class="grid-2" id="agentGrid"><div class="empty-state">No agents running.</div></div>
+    </div>
+  </div>
+
+  <!-- VULNERABILITIES -->
+  <div class="panel flex-col" id="panel-vulns">
+    <div class="card flex-col flex-1">
+      <h3>All Vulnerabilities <span id="vulnCount" style="color:var(--muted);font-size:12px"></span></h3>
+      <div class="scroll-y flex-1" id="vulnList"><div class="empty-state">No vulnerabilities found yet.</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const socket = io();
+let state = { vulns: [], agents: new Map(), currentJob: null, phases: [] };
+
+// Tabs
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
+  });
+});
+
+// Terminal rendering
+function renderTerminalEntry(entry) {
+  const ts = new Date(entry.timestamp).toLocaleTimeString();
+  const agentTag = entry.agent ? '<span class="agent-tag">[' + escapeHtml(entry.agent) + ']</span>' : '';
+  return '<div class="terminal-entry ' + entry.type + '"><span class="ts">' + ts + '</span>' + agentTag + escapeHtml(entry.content) + '</div>';
+}
+function escapeHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+function appendTerminal(entry) {
+  ['dashTerminal', 'fullTerminal'].forEach(id => {
+    const el = document.getElementById(id);
+    el.insertAdjacentHTML('beforeend', renderTerminalEntry(entry));
+    el.scrollTop = el.scrollHeight;
+  });
+}
+
+// Socket events
+socket.on('terminal:history', entries => {
+  const html = entries.map(renderTerminalEntry).join('');
+  ['dashTerminal', 'fullTerminal'].forEach(id => {
+    const el = document.getElementById(id);
+    el.innerHTML = html;
+    el.scrollTop = el.scrollHeight;
+  });
+});
+socket.on('terminal:entry', entry => appendTerminal(entry));
+
+socket.on('vulnerability:found', data => {
+  state.vulns.push(data.vulnerability);
+  renderVulns();
+  document.getElementById('statVulns').textContent = state.vulns.length;
+});
+
+socket.on('agent:started', data => {
+  state.agents.set(data.agentId, { id: data.agentId, name: data.name, status: 'working' });
+  renderAgents();
+  document.getElementById('statAgents').textContent = [...state.agents.values()].filter(a => a.status === 'working').length;
+});
+socket.on('agent:completed', data => {
+  const a = state.agents.get(data.agentId);
+  if (a) a.status = 'completed';
+  renderAgents();
+  document.getElementById('statAgents').textContent = [...state.agents.values()].filter(a => a.status === 'working').length;
+});
+socket.on('agent:failed', data => {
+  const a = state.agents.get(data.agentId);
+  if (a) a.status = 'failed';
+  renderAgents();
+});
+
+socket.on('phase:started', data => {
+  const existing = state.phases.find(p => p.name === data.phase);
+  if (existing) { existing.status = 'running'; } else { state.phases.push({ name: data.phase, status: 'running', findings: 0 }); }
+  renderPhases();
+});
+socket.on('phase:complete', data => {
+  const p = state.phases.find(ph => ph.name === data.phase);
+  if (p) { p.status = 'completed'; p.findings = data.findings; }
+  renderPhases();
+  updateProgress();
+});
+socket.on('job:started', jobId => {
+  state.currentJob = { id: jobId, status: 'running' };
+  document.getElementById('currentJob').innerHTML = '<div><strong>Job:</strong> ' + jobId.substring(0,8) + '...</div><div><strong>Status:</strong> <span style="color:var(--yellow)">Running</span></div>';
+  document.getElementById('jobPill').style.display = '';
+  document.getElementById('jobPill').className = 'pill yellow';
+  document.getElementById('jobPill').textContent = 'RUNNING';
+});
+socket.on('job:complete', data => {
+  if (state.currentJob) state.currentJob.status = 'completed';
+  document.getElementById('currentJob').innerHTML = '<div><strong>Job:</strong> ' + data.jobId.substring(0,8) + '...</div><div><strong>Status:</strong> <span style="color:var(--green)">Completed</span></div><div><strong>Vulns:</strong> ' + data.vulnerabilityCount + '</div>';
+  document.getElementById('jobPill').className = 'pill green';
+  document.getElementById('jobPill').textContent = 'COMPLETE';
+  document.getElementById('statProgress').textContent = '100%';
+});
+socket.on('job:failed', data => {
+  document.getElementById('jobPill').className = 'pill red';
+  document.getElementById('jobPill').textContent = 'FAILED';
+});
+
+function updateProgress() {
+  if (state.phases.length === 0) return;
+  const done = state.phases.filter(p => p.status === 'completed').length;
+  const pct = Math.round((done / state.phases.length) * 100);
+  document.getElementById('statProgress').textContent = pct + '%';
+}
+
+function renderVulns() {
+  const list = document.getElementById('vulnList');
+  const latest = document.getElementById('latestVulns');
+  if (state.vulns.length === 0) { list.innerHTML = '<div class="empty-state">None yet.</div>'; latest.innerHTML = '<div class="empty-state">None yet.</div>'; return; }
+  const html = state.vulns.map(v => '<div class="vuln-row"><span class="sev ' + v.severity + '">' + v.severity + '</span><span class="vuln-title">' + escapeHtml(v.title) + '</span><span class="vuln-agent">' + escapeHtml(v.foundBy || v.discoveredBy || '') + '</span></div>').join('');
+  list.innerHTML = html;
+  latest.innerHTML = state.vulns.slice(-5).reverse().map(v => '<div class="vuln-row"><span class="sev ' + v.severity + '">' + v.severity + '</span><span class="vuln-title">' + escapeHtml(v.title) + '</span></div>').join('');
+  document.getElementById('vulnCount').textContent = '(' + state.vulns.length + ')';
+}
+
+function renderAgents() {
+  const grid = document.getElementById('agentGrid');
+  const agents = [...state.agents.values()];
+  if (agents.length === 0) { grid.innerHTML = '<div class="empty-state">No agents.</div>'; return; }
+  grid.innerHTML = agents.map(a => '<div class="agent-card"><div class="agent-dot ' + a.status + '"></div><div class="agent-info"><div class="agent-name">' + escapeHtml(a.name) + '</div></div><div class="agent-status" style="color:var(--' + (a.status==='working'?'yellow':a.status==='completed'?'green':a.status==='failed'?'red':'muted') + ')">' + a.status + '</div></div>').join('');
+}
+
+function renderPhases() {
+  const list = document.getElementById('phaseList');
+  if (state.phases.length === 0) { list.innerHTML = '<div class="empty-state">No phases.</div>'; return; }
+  var icons = { pending: '&#x2022;', running: '&#x25B6;', completed: '&#x2713;', failed: '&#x2717;' };
+  list.innerHTML = state.phases.map(p => '<div class="phase-item"><div class="phase-icon ' + p.status + '">' + (icons[p.status]||'?') + '</div><div class="phase-name">' + escapeHtml(p.name) + '</div><div class="phase-findings">' + p.findings + ' findings</div></div>').join('');
+}
+
+// Auth check
+fetch('/api/auth/status').then(r=>r.json()).then(d => {
+  const pill = document.getElementById('authPill');
+  if (d.authenticated) { pill.className = 'pill green'; pill.textContent = 'AUTHENTICATED'; }
+  else { pill.className = 'pill red'; pill.textContent = 'NOT AUTHENTICATED'; }
+});
+
+// Load scope docs
+function loadScopes() {
+  fetch('/api/scope').then(r=>r.json()).then(d => {
+    const el = document.getElementById('scopeList');
+    if (!d.documents || d.documents.length === 0) { el.innerHTML = '<div class="empty-state">No auth documents. Fill the form above to create one automatically.</div>'; return; }
+    el.innerHTML = d.documents.map(doc => '<div style="padding:10px 0;border-bottom:1px solid var(--border)"><strong>' + escapeHtml(doc.clientName) + '</strong> &mdash; ' + escapeHtml(doc.targetDomain) + ' <span class="pill ' + (doc.valid?'green':'red') + '" style="margin-left:8px">' + (doc.valid?'Valid':'Expired') + '</span><div style="font-size:12px;color:var(--muted);margin-top:4px">' + doc.daysRemaining + ' days remaining &middot; ' + doc.testingType.join(', ') + '</div></div>').join('');
+  });
+}
+loadScopes();
+
+// Pentest form
+document.getElementById('pentestForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const statusEl = document.getElementById('launchStatus');
+  statusEl.textContent = 'Launching...';
+  statusEl.style.color = 'var(--yellow)';
+
+  const target = document.getElementById('fTarget').value;
+  const body = {
+    target: target,
+    scanType: document.getElementById('fScanType').value,
+    clientName: document.getElementById('fClient').value || target,
+    authorizedBy: document.getElementById('fAuthBy').value || 'web-ui',
+    inScope: document.getElementById('fInScope').value ? document.getElementById('fInScope').value.split(',').map(s=>s.trim()) : [target],
+    outOfScope: document.getElementById('fOutScope').value ? document.getElementById('fOutScope').value.split(',').map(s=>s.trim()) : []
+  };
+
+  try {
+    const resp = await fetch('/api/pentest', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const data = await resp.json();
+    if (data.success) {
+      statusEl.textContent = 'Pentest started! Job: ' + data.jobId.substring(0, 8) + '...';
+      statusEl.style.color = 'var(--green)';
+      state.phases = [];
+      state.vulns = [];
+      state.agents.clear();
+      renderVulns(); renderAgents(); renderPhases();
+      document.getElementById('statVulns').textContent = '0';
+      document.getElementById('statAgents').textContent = '0';
+      document.getElementById('statProgress').textContent = '0%';
+      document.querySelector('.tab.active').classList.remove('active');
+      document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+      document.querySelector('[data-tab=dashboard]').classList.add('active');
+      document.getElementById('panel-dashboard').classList.add('active');
+      loadScopes();
+    } else {
+      statusEl.textContent = 'Error: ' + data.error;
+      statusEl.style.color = 'var(--red)';
+    }
+  } catch (err) {
+    statusEl.textContent = 'Network error: ' + err.message;
+    statusEl.style.color = 'var(--red)';
+  }
+});
+</script>
+</body>
+</html>
