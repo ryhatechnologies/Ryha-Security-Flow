@@ -325,6 +325,373 @@ ryha config list
 
 ---
 
+## 🤖 Agent System - How Agents Spawn & Work in Parallel
+
+### What Are Agents?
+
+Agents are autonomous AI-powered workers that execute specific penetration testing tasks:
+- Each agent is **specialized** in one role (recon, scanning, analysis, etc.)
+- Each agent **runs concurrently** (parallel) with other agents in the same phase
+- Each agent **communicates** results back to the orchestrator in real-time
+- Each agent **adapts** based on findings and AI analysis
+
+### Agent Types (9 Total)
+
+| Agent Type | Count | Role | Task |
+|------------|-------|------|------|
+| **DNS Enumeration** | 1 | Recon | DNS records, zone transfers, subdomain discovery |
+| **WHOIS/OSINT** | 1 | Recon | WHOIS data, email harvesting, social media footprinting |
+| **Service Discovery** | 1 | Recon | Port scanning, service detection, OS fingerprinting |
+| **Tech Fingerprinting** | 1 | Recon | CMS detection, framework ID, WAF detection |
+| **Vulnerability Scanner** | 2 | Scanning | CVE detection (nuclei, nikto, OpenVAS) |
+| **Web App Tester** | 2 | Scanning | OWASP Top 10 testing (XSS, SQLi, CSRF, etc.) |
+| **Analyzer** | 1 | Analysis | CVSS scoring, risk prioritization, attack chains |
+| **Exploit Tester** | 1 | Exploitation | Safe PoC exploitation, privilege escalation |
+| **Data Exposure** | 1 | Post-Exploitation | Sensitive data assessment, lateral movement |
+
+**Total Agents Per Phase**: 4-6 agents spawned (varies by phase)
+**Maximum Concurrent**: 10 agents running simultaneously
+
+### How Parallel Execution Works
+
+#### Timeline: Agent Spawning & Execution
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    PENTEST JOB STARTS                              │
+│                     (T = 0 seconds)                                 │
+└──────────────────────────┬──────────────────────────────────────────┘
+                           │
+        ┌──────────────────┼──────────────────┐
+        │                  │                  │
+   PHASE 1:           PHASE 2:           PHASE 3:           PHASE 4:
+   RECON              SCANNING           ANALYSIS           EXPLOIT
+   (0-15 min)         (15-45 min)        (45-60 min)        (60-90 min)
+        │                  │                  │                  │
+        │                  │                  │                  │
+   ┌────▼─────┐       ┌────▼─────┐      ┌────▼─────┐       ┌────▼─────┐
+   │ Agent 1  │       │ Agent 5  │      │ Agent 10 │       │ Agent 14 │
+   │ Agent 2  │       │ Agent 6  │      │ (AI)     │       │ Agent 15 │
+   │ Agent 3  │       │ Agent 7  │      │ Agent 11 │       │          │
+   │ Agent 4  │       │ Agent 8  │      │ Agent 12 │       │          │
+   │          │       │ Agent 9  │      │ Agent 13 │       │          │
+   │ (Running │       │          │      │          │       │ (Running │
+   │ in       │       │ (Running │      │ (Running │       │ in       │
+   │ parallel)│       │ in       │      │ in       │       │ parallel)│
+   │          │       │ parallel)│      │ parallel)│       │          │
+   └────┬─────┘       └────┬─────┘      └────┬─────┘       └────┬─────┘
+        │                  │                  │                  │
+        └──────────────────┼──────────────────┼──────────────────┘
+                           │
+                ┌──────────▼──────────┐
+                │  PHASE 5:           │
+                │  POST-EXPLOITATION  │
+                │  (90-120 min)       │
+                │  AgentX (Running)   │
+                └──────────┬──────────┘
+                           │
+                ┌──────────▼──────────┐
+                │  REPORTING & EXPORT │
+                │  (120-135 min)      │
+                └────────────────────┘
+```
+
+### How Agents Spawn - Step by Step
+
+#### Step 1: Job Started
+```
+ryha pentest -d target.com -t full
+           ↓
+   Orchestrator creates job UUID
+           ↓
+   Loads all 5 phases from config
+           ↓
+   Validates authorization document
+           ↓
+   Starts PHASE 1: Reconnaissance
+```
+
+#### Step 2: Phase 1 - Recon (Agents spawn CONCURRENTLY)
+
+```
+T = 0:00  Agent 1 spawns: DNS Enumeration
+          ├─ Query DNS records for target.com
+          ├─ Enumerate subdomains (amass, subfinder)
+          └─ Detect DNS zone transfers
+
+T = 0:00  Agent 2 spawns: WHOIS/OSINT (SAME TIME as Agent 1)
+          ├─ WHOIS lookup
+          ├─ Email harvesting (theHarvester)
+          ├─ Social media footprinting
+          └─ Company association mapping
+
+T = 0:00  Agent 3 spawns: Service Discovery (SAME TIME)
+          ├─ Port scan full range (masscan, nmap)
+          ├─ Service version detection
+          ├─ OS fingerprinting
+          └─ Firewall/WAF detection
+
+T = 0:00  Agent 4 spawns: Tech Fingerprinting (SAME TIME)
+          ├─ CMS detection (WordPress, Drupal, Joomla)
+          ├─ Web framework identification
+          ├─ Web server detection (Apache, Nginx, IIS)
+          └─ Programming language detection
+
+T = 5:00   Agent 1 completes → Submits findings
+           └─ 247 subdomains discovered
+
+T = 8:00   Agent 2 completes → Submits findings
+           └─ 3 leaked emails, company info gathered
+
+T = 12:00  Agent 3 completes → Submits findings
+           └─ 28 open ports, services mapped
+
+T = 15:00  Agent 4 completes → Submits findings
+           └─ WordPress 5.8.1 detected, Apache 2.4.41
+
+         ▼▼▼ ALL PHASE 1 AGENTS COMPLETE ▼▼▼
+
+T = 15:01  PHASE 1 COMPLETE - Aggregate findings
+           → 247 targets identified
+           → 28 services cataloged
+           → Technology stack mapped
+```
+
+#### Step 3: Phase 2 - Scanning (New agents spawn when Phase 1 ends)
+
+```
+T = 15:01  Agent 5 spawns: Vulnerability Scanner (nuclei)
+          ├─ Run CVE templates against all 247 targets
+          ├─ Check for known vulnerable versions
+          └─ Generate risk scores for each CVE
+
+T = 15:01  Agent 6 spawns: Web App Tester (burp, zaproxy)
+          ├─ Test OWASP Top 10 vulnerabilities:
+          │  - XSS (Cross-Site Scripting)
+          │  - SQLi (SQL Injection)
+          │  - CSRF (Cross-Site Request Forgery)
+          │  - SSRF (Server-Side Request Forgery)
+          │  - LFI/RFI (Local/Remote File Inclusion)
+          │  - Auth bypass
+          │  - Session management issues
+          │  - Insecure deserialization
+          └─ Generate findings for each endpoint
+
+T = 15:01  Agent 7 spawns: Directory/File Discovery
+          ├─ Brute-force common directories (gobuster)
+          ├─ Find backup files (.bak, .zip, .old)
+          ├─ Discover hidden API endpoints
+          └─ Enumerate git repositories exposed
+
+T = 15:01  Agent 8 spawns: SSL/TLS Analyzer
+          ├─ Certificate chain validation
+          ├─ Cipher strength analysis
+          ├─ Deprecated protocol detection (SSLv3, TLS 1.0)
+          └─ Check for SSL/TLS misconfigurations
+
+T = 15:01  Agent 9 spawns: Additional Scanner (nikto)
+          ├─ Alternative CVE scanning engine
+          ├─ Backup from Agent 5 (redundancy)
+          └─ Cross-validate findings
+
+T = 20:00   Agent 5 completes → 14 CVEs found
+            └─ 3 Critical, 5 High, 6 Medium
+
+T = 25:00   Agent 6 completes → 12 Web vulns found
+            └─ 2 SQLi, 3 XSS, 4 CSRF, 3 Auth issues
+
+T = 22:00   Agent 7 completes → 8 files/dirs exposed
+            └─ web.config.bak, .git, admin_backup.zip
+
+T = 28:00   Agent 8 completes → 6 SSL issues found
+            └─ TLS 1.0 enabled, weak ciphers
+
+T = 32:00   Agent 9 completes → 5 additional vulns
+            └─ Cross-validates Agent 5 findings
+
+T = 32:01  PHASE 2 COMPLETE - Aggregate findings
+           → 39 vulnerabilities discovered
+           → Severity breakdown: 3 Critical, 8 High, 12 Medium, 16 Low
+```
+
+#### Step 4: Phase 3 - Deep Analysis (1 agent, AI-powered)
+
+```
+T = 32:01  Agent 10 spawns: AI Vulnerability Analyzer
+          ├─ Read all 39 vulnerabilities from Phases 1-2
+          ├─ For each vulnerability:
+          │  ├─ Calculate CVSS score (0-10)
+          │  ├─ Assess exploitability (easy/moderate/hard)
+          │  ├─ Identify attack chains
+          │  ├─ Check for combinations (e.g., SQLi + Auth Bypass)
+          │  └─ Generate remediation advice
+          ├─ Identify zero-days or unusual patterns
+          ├─ Prioritize by real-world impact
+          └─ Output: Structured JSON with all details
+
+T = 45:00  Agent 10 completes → Analysis done
+           └─ 39 vulns analyzed and prioritized
+           └─ 2 critical attack chains identified
+
+T = 45:01  PHASE 3 COMPLETE
+           → Attack chains identified
+           → Remediation advice generated
+           → Risk scoring complete
+```
+
+#### Step 5: Phase 4 - Exploitation (2 agents in parallel)
+
+```
+T = 45:01  Agent 14 spawns: Exploit Tester
+          ├─ For each Critical/High vuln:
+          │  ├─ Create safe PoC (no data deletion)
+          │  ├─ Verify exploitability
+          │  └─ Document attack path
+          ├─ Privilege escalation testing
+          ├─ Lateral movement assessment
+          └─ Document real-world impact
+
+T = 45:01  Agent 15 spawns: Metasploit Integration
+          ├─ Run applicable MSF modules
+          ├─ Verify RCE/code execution
+          ├─ Test credential harvesting
+          └─ Assess system compromise level
+
+T = 75:00  Agent 14 completes → 4 vulns exploited
+           └─ Created proofs-of-concept
+
+T = 80:00  Agent 15 completes → 2 additional exploits
+           └─ RCE confirmed on 2 targets
+
+T = 80:01  PHASE 4 COMPLETE
+           → 6 vulnerabilities confirmed via PoC
+           → System compromise level assessed
+```
+
+#### Step 6: Phase 5 - Post-Exploitation (1 agent)
+
+```
+T = 80:01  Agent 16 spawns: Data Exposure Assessment
+          ├─ Search for sensitive files:
+          │  ├─ Database backups
+          │  ├─ API keys/credentials
+          │  ├─ Customer PII
+          │  ├─ Source code
+          │  └─ Configuration files
+          ├─ Assess data exfiltration risk
+          ├─ Check for lateral movement paths
+          └─ Document impact
+
+T = 105:00 Agent 16 completes → Exposure assessment done
+            └─ 47GB of accessible data
+            └─ 1,200 customer records at risk
+
+T = 105:01 PHASE 5 COMPLETE
+           → Full post-exploitation landscape mapped
+```
+
+#### Step 7: Report Generation
+
+```
+T = 105:01 Orchestrator aggregates all findings
+           ├─ 40 vulnerabilities total
+           ├─ 6 confirmed via PoC
+           ├─ 2 critical attack chains
+           ├─ 47GB sensitive data exposed
+           └─ Executive summary generated
+
+T = 120:00 Report generation complete
+           └─ HTML/PDF/Markdown generated
+
+Dashboard updates with completion status:
+✅ Recon Phase: 4 agents, 15 min, Complete
+✅ Scanning Phase: 5 agents, 17 min, Complete
+✅ Analysis Phase: 1 agent (AI), 12 min, Complete
+✅ Exploitation Phase: 2 agents, 35 min, Complete
+✅ Post-Exploitation Phase: 1 agent, 25 min, Complete
+──────────────────────────────────────────────
+TOTAL TIME: 120 minutes (2 hours)
+TOTAL AGENTS SPAWNED: 13 agents across 5 phases
+FINDINGS: 40 vulnerabilities, 6 confirmed exploitable
+```
+
+### Real-World Parallel Execution Example
+
+**Scenario: Full Pentest of Web App (target.com)**
+
+```
+TIME      AGENTS RUNNING                          STATUS
+────────────────────────────────────────────────────────
+00:00     [1][2][3][4]                            Phase 1: Spawn 4 agents (Recon)
+00:05     [1][2][3][4]                            All 4 running in parallel
+00:12     [1][2][3][4]                            Agent 1 completes (DNS)
+00:15     [-][2][3][4] → [5][6][7][8][9]        Phase 2 spawns 5 agents
+          (Wait for all Phase 1 to finish)
+00:22     [5][6][7][8][9]                         Agent 2 completes, Phase 1 done
+00:23     PHASE 1 ENDS → [5][6][7][8][9]         Agent 3 completes
+00:32     [5][6][7][8][9]                         All Phase 2 agents running
+00:35     [5][6][7][8][9]                         Agent 5 (nuclei) completes
+00:42     [5][6][7][-][-] → [10]                 Phase 3 spawns (AI analyzer)
+          (Phase 2 agents gradually finish)
+00:45     PHASE 2 ENDS → [10]                     All Phase 2 agents done
+00:52     [10]                                     AI analyzing all findings
+01:00     [-] → [14][15]                         Phase 4 spawns (Exploit agents)
+          (Phase 3 analysis complete)
+01:05     [14][15]                                Both exploit agents running
+01:35     [-][-] → [16]                          Phase 5 spawns (Post-exploitation)
+          (Exploit agents finish)
+01:40     PHASE 4 ENDS → [16]                     Starting post-exploitation
+02:00     PHASE 5 ENDS ✅                        All agents complete
+                                                  Report generated
+```
+
+### Key Parallel Execution Rules
+
+1. **Phases are Sequential**
+   - Phase 1 must complete before Phase 2 starts
+   - Phase 2 must complete before Phase 3 starts
+   - etc.
+
+2. **Agents Within a Phase Run in Parallel**
+   - All 4 Recon agents run simultaneously
+   - All 5 Scanning agents run simultaneously
+   - Maximum 10 concurrent agents
+
+3. **Agent Communication**
+   - Results stream to Dashboard in real-time via Socket.IO
+   - Each agent emits events: `agent:started`, `agent:working`, `agent:completed`
+   - Orchestrator aggregates findings after each phase
+
+4. **Failure Handling**
+   - If one agent fails, phase continues (configurable)
+   - Failed agents marked red on Dashboard
+   - Results aggregated from successful agents only
+
+5. **Performance**
+   - Parallel execution: 2-4 hours for full scan
+   - Sequential would take: 6-8 hours
+   - **2-4x speedup** from parallel agents
+
+### Monitor Agents in Real-Time
+
+```bash
+# Watch agents spawning
+ryha server
+# Open http://localhost:3000 → Agents tab
+
+# CLI monitoring
+watch -n 1 'ryha agents status'
+
+# Dashboard shows:
+├─ Agent Name (e.g., "DNS Enumeration")
+├─ Status (idle/working/completed/failed)
+├─ Progress (if available)
+├─ Current task description
+└─ Real-time updates via WebSocket
+```
+
+---
+
 ## 🔄 Workflow Example - Full Penetration Test
 
 ### Step 1: Start Dashboard
