@@ -1,0 +1,80 @@
+# Sample Authorization Document
+# This is a template for creating official authorization documents for penetration testing
+
+id: "auth-sample-001"
+clientName: "Acme Corporation"
+targetDomain: "acme.com"
+
+# In-Scope Targets
+# These targets are authorized for security testing
+# Supports:
+# - FQDN (e.g., acme.com, www.acme.com)
+# - Wildcards (e.g., *.acme.com)
+# - IPv4 CIDR notation (e.g., 10.0.0.0/24)
+inScope:
+  - "acme.com"
+  - "*.acme.com"
+  - "api.acme.com"
+  - "portal.acme.com"
+  - "10.0.0.0/24"
+  - "10.1.0.0/25"
+  - "192.168.1.0/24"
+
+# Out-of-Scope Targets
+# These targets MUST NOT be tested under any circumstances
+# This is critical to prevent damage to sensitive systems or third-party infrastructure
+outOfScope:
+  - "customer-data.acme.com"
+  - "production.acme.com"
+  - "backup.acme.com"
+  - "10.0.1.0/24"  # Third-party infrastructure
+  - "10.0.2.0/24"  # Critical systems
+  - "finance.acme.com"  # Payment processing
+
+# Authorization Period
+# The authorization is valid from startDate to endDate (inclusive)
+# Security testing must not commence before startDate or after endDate
+startDate: "2024-01-15"
+endDate: "2024-02-15"
+
+# Testing Types
+# Specify which types of security testing are authorized
+# Options: network, web, infrastructure, code, cloud, full
+testingType:
+  - "network"
+  - "web"
+  - "infrastructure"
+
+# Authorization Details
+# Legal and compliance information
+authorizedBy: "John Smith, CEO"  # Name and title of person authorizing the test
+signature: "JS-2024-0115"         # Digital signature or authorization code
+
+# Special Instructions
+# Additional notes, constraints, or requirements for the engagement
+notes: |
+  Avoid testing during business hours (9 AM - 5 PM EST).
+
+  Contact Information:
+  - Security Team: security@acme.com
+  - On-Call Manager: +1-555-0123
+
+  Constraints:
+  - Do not perform denial-of-service attacks
+  - Do not access or exfiltrate customer data
+  - Limit concurrent connections to 10 per target
+  - No physical security testing on premises
+  - No social engineering without explicit approval
+
+  Special Approvals:
+  - Cloud infrastructure testing approved (AWS account: 123456789012)
+  - Active Directory testing approved with domain admin credentials
+
+  Reporting:
+  - Send findings to: infosec@acme.com
+  - Weekly status updates required
+  - Final report due within 30 days
+
+# Metadata (auto-populated)
+createdAt: "2024-01-10T15:30:00.000Z"
+updatedAt: "2024-01-10T15:30:00.000Z"

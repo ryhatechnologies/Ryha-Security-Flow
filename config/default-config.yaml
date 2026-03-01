@@ -1,0 +1,92 @@
+# Ryha Security Flow - Default Configuration
+# Location: ~/.ryha/config.yaml
+# This file is auto-generated during first-time setup via setup-wizard
+
+# GitHub Copilot / Claude API Configuration
+copilot:
+  # Proxy URL for API requests (optional)
+  proxyUrl: 'https://api.githubcopilot.com'
+
+  # Available models for agents
+  models:
+    - 'claude-opus-4-6'
+    - 'claude-3-5-sonnet'
+    - 'claude-3-haiku'
+
+  # Default model for agents
+  defaultModel: 'claude-opus-4-6'
+
+  # API key (will be encrypted when stored)
+  # apiKey: 'sk-ant-...' # This is populated during setup wizard
+
+# Agent Configuration
+agents:
+  # Maximum number of parallel agents to run
+  maxParallel: 10
+
+  # Number of times to retry failed agent tasks
+  retryAttempts: 3
+
+  # Default agent types to spawn
+  defaultTypes:
+    - 'vulnerability-scanner'
+    - 'exploitation-agent'
+    - 'report-generator'
+
+# Penetration Testing Tools Configuration
+tools:
+  # Path to nmap executable
+  nmap: '/usr/bin/nmap'
+
+  # Path to Burp Suite Pro
+  burpsuite: '/opt/burpsuite/burpsuite_pro'
+
+  # Path to OWASP ZAP
+  zaproxy: '/usr/bin/zaproxy'
+
+  # Path to Metasploit Framework
+  metasploit: '/usr/bin/msfconsole'
+
+  # Path to SQLMap
+  sqlmap: '/usr/bin/sqlmap'
+
+# Kali Linux Integration
+kali:
+  # Base directory for Kali installation
+  baseDir: '/opt/ryha-security-flow'
+
+  # Directory for scan data and artifacts
+  dataDir: '/var/ryha/data'
+
+  # Directory for generated reports
+  reportsDir: '/var/ryha/reports'
+
+  # Enable/disable Kali integration
+  enabled: true
+
+# Logging Configuration
+logging:
+  # Log level: error, warn, info, debug
+  level: 'info'
+
+  # Log retention period (e.g., '30d' for 30 days)
+  retention: '30d'
+
+  # Optional: specific log directory (defaults to ~/.ryha/logs)
+  logDir: '~/.ryha/logs'
+
+# Server Configuration
+server:
+  # Port for the REST API server
+  port: 3000
+
+  # Host to bind to
+  host: 'localhost'
+
+  # Enable CORS for cross-origin requests
+  enableCors: true
+
+  # Optional: CORS origins whitelist
+  corsOrigins:
+    - 'http://localhost:3000'
+    - 'http://localhost:8080'
